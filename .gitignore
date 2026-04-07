@@ -1,0 +1,6 @@
+*.pt
+*/wandb
+*Branch*
+*/runs
+*/.venv
+*/sam3
