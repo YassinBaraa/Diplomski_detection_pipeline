@@ -3,11 +3,11 @@ from FrameSource import FrameSource
 
 
 class DetectionPipeline:
-    def __init__(self, source: FrameSource, Detector, KeypointSelector):
+    def __init__(self, source, detector, postprocessor):
         self.source = source
-        self.detector = Detector
-        self.keypoint_selector = KeypointSelector
-    
+        self.detector = detector
+        self.postprocessor = postprocessor
+
     def run(self):
         while True:
             ret, frame = self.source.read()
@@ -15,5 +15,11 @@ class DetectionPipeline:
                 break
 
             detections = self.detector.predict(frame)
-            point = self.keypoint_selector.select_point(detections)
+            result = self.postprocessor.process(detections, frame=frame)
+
+            return result
+            #yield result #return values one at a time instead of all at once
+        
+
+
 
