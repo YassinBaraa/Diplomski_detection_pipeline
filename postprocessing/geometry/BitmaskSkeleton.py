@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from skimage.morphology import skeletonize
+
 from pipeline.Stage import Stage
 
 class BitmaskSkeleton(Stage):
@@ -18,7 +19,9 @@ class BitmaskSkeleton(Stage):
         # Convert to OpenCV binary mask (0/255 uint8)
         ctx.skeleton = skeleton.astype(np.uint8) * 255
 
-        cv2.imshow("Skeleton", ctx.skeleton)
-        cv2.waitKey(100)
+        
+        #cv2.imshow("Original Frame in Skeleton Stage", ctx.frame)
+        #cv2.imshow("Skeleton", ctx.skeleton)
+        #cv2.waitKey(100)
         
         return ctx

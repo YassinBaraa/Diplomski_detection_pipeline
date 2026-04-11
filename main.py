@@ -3,10 +3,13 @@ from sources.MP4Source import MP4Source
 from detectors.YOLOBranchSeg import YOLOBranchSeg
 from postprocessing.PostProcessor import PostProcessor
 from postprocessing.masks.MaskExtraction import MaskExtraction
-#from postprocessing.geometry.DistanceHeatmap import DistanceHeatmap
+from postprocessing.geometry.DistanceHeatmap import DistanceHeatmap
 from postprocessing.geometry.BitmaskSkeleton import BitmaskSkeleton
-#from postprocessing.lines.LineDetectionStage import LineDetectionStage
+#from postprocessing.geometry.LineFit import LineFit
+from postprocessing.scoring.CandidateScoring import CandidateScoring
 from pipeline.DetectionPipeline import DetectionPipeline
+
+import cv2
 
 def main():
     #source = CameraSource()
@@ -16,9 +19,10 @@ def main():
 
     postprocessor = PostProcessor([
         MaskExtraction(),
-        #DistanceHeatmap(),
+        DistanceHeatmap(),
         BitmaskSkeleton(),
-        #LineDetectionStage(),
+        #LineFit(),
+        CandidateScoring(),
     ])
 
     pipeline = DetectionPipeline(
@@ -29,7 +33,9 @@ def main():
 
     #pipeline.run() yields context objects
     for ctx in pipeline.run():
-        print(ctx.best_candidate)
+        #print(ctx.best_candidate)
+        cv2.imshow("Branch Score", ctx.debug["branch_score_image"])
+        cv2.waitKey(1)
 
 if __name__ == "__main__":
     main()

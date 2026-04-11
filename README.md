@@ -3,6 +3,9 @@ https://docs.ultralytics.com/guides/raspberry-pi/#inference-with-camera
 
 https://www.geeksforgeeks.org/python/python-opencv-distancetransform-function/
 
+https://scikit-image.org/docs/0.25.x/auto_examples/edges/plot_skeleton.html
+
+https://docs.opencv.org/3.4/js_contour_features_fitLine.html
 
 
 initial plan for detection pipeline
@@ -28,34 +31,13 @@ detection_pipeline/
 │   └── YOLOBranchSeg.py
 ├── postprocessing/
 │   ├── PostProcessor.py
-│   ├── filtering/
-│   │   └── DetectionFilterStage.py
 │   ├── masks/
 │   │   └── MaskExtraction.py
 │   ├── geometry/
 │   │   ├── DistanceHeatmap.py
 │   │   ├── LineFit.py
-│   │   └── CandidatePointStage.py
-│   ├── scoring/
-│   │   ├── BranchScoringStage.py
-│   │   └── BestBranchStage.py
-│   └── debug/
-│       ├── MaskOverlayStage.py
-│       └── LineOverlayStage.py
-├── model/
-│   └── best.pt
-└── utils/
-    ├── types.py
-    └── image_ops.py
-
-
-PipelineContext
-    frame: np.ndarray
-    detections: Any = None
-    masks: Any = None
-    binary_mask: Optional[np.ndarray] = None
-    heatmap: Optional[np.ndarray] = None
-    lines: Any = None
-    candidates: Any = None
-    best_candidate: Any = None
-    debug: dict = field(default_factory=dict)
+│   │   └── BitmaskSkeleton.py
+│   └── scoring/
+│       └── CandidateScoring.py
+└── model/
+    └── best.pt
