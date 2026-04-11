@@ -1,6 +1,4 @@
-import cv2
-from FrameSource import FrameSource
-
+from pipeline.PipelineContext import PipelineContext
 
 class DetectionPipeline:
     def __init__(self, source, detector, postprocessor):
@@ -14,12 +12,8 @@ class DetectionPipeline:
             if not ret:
                 break
 
-            detections = self.detector.predict(frame)
-            result = self.postprocessor.process(detections, frame=frame)
+            ctx = PipelineContext(frame=frame)
+            ctx.detections, ctx.masks, ctx.confidences = self.detector.predict(frame)
+            ctx = self.postprocessor.process(ctx)
 
-            return result
-            #yield result #return values one at a time instead of all at once
-        
-
-
-
+            yield ctx
