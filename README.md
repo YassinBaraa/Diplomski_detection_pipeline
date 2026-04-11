@@ -1,6 +1,10 @@
 example
 https://docs.ultralytics.com/guides/raspberry-pi/#inference-with-camera
 
+https://www.geeksforgeeks.org/python/python-opencv-distancetransform-function/
+
+
+
 initial plan for detection pipeline
     yolo seg segments branches ---add a accuracy treshold
     get bitmap of segemntations

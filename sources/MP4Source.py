@@ -8,6 +8,7 @@ class MP4Source(FrameSource):
 
     def read(self):
         ret, frame = self.cap.read()
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         return ret, frame
 
     def release(self):
