@@ -3,7 +3,8 @@ from sources.MP4Source import MP4Source
 from detectors.YOLOBranchSeg import YOLOBranchSeg
 from postprocessing.PostProcessor import PostProcessor
 from postprocessing.masks.MaskExtraction import MaskExtraction
-from postprocessing.geometry.DistanceHeatmap import DistanceHeatmap
+#from postprocessing.geometry.DistanceHeatmap import DistanceHeatmap
+from postprocessing.geometry.BitmaskSkeleton import BitmaskSkeleton
 #from postprocessing.lines.LineDetectionStage import LineDetectionStage
 from pipeline.DetectionPipeline import DetectionPipeline
 
@@ -15,7 +16,8 @@ def main():
 
     postprocessor = PostProcessor([
         MaskExtraction(),
-        DistanceHeatmap(),
+        #DistanceHeatmap(),
+        BitmaskSkeleton(),
         #LineDetectionStage(),
     ])
 

@@ -31,10 +31,10 @@ detection_pipeline/
 │   ├── filtering/
 │   │   └── DetectionFilterStage.py
 │   ├── masks/
-│   │   └── MaskExtractionStage.py
+│   │   └── MaskExtraction.py
 │   ├── geometry/
-│   │   ├── DistanceTransformStage.py
-│   │   ├── HoughLineStage.py
+│   │   ├── DistanceHeatmap.py
+│   │   ├── LineFit.py
 │   │   └── CandidatePointStage.py
 │   ├── scoring/
 │   │   ├── BranchScoringStage.py

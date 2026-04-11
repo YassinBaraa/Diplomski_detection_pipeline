@@ -7,7 +7,6 @@ BITMASK_THRESHOLD = 0.5
 class MaskExtraction(Stage):
     def run(self, ctx):
         if ctx.masks is None or len(ctx.masks) == 0:
-            ctx.binary_mask = None
             return ctx
 
         ctx.binary_mask = np.max(

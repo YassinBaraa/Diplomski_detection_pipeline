@@ -8,7 +8,8 @@ class PipelineContext:
     detections: Any = None
     masks: Any = None
     binary_mask: Optional[np.ndarray] = None
-    heatmap: Optional[np.ndarray] = None
+    distance_heatmap: Optional[np.ndarray] = None
+    skeleton: Optional[np.ndarray] = None
     lines: Any = None
     candidates: Any = None
     best_candidate: Any = None
