@@ -7,7 +7,7 @@ source:
 
 # Detector Configuration (YOLO)
 detector:
-  model_path: "model/best.pt"
+  model_path: "model/best_small.pt"
   confidence_threshold: 0.5
 
 # Camera Configuration (if source type is "camera")

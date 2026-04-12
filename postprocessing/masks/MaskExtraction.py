@@ -23,7 +23,7 @@ class MaskExtraction(Stage):
             axis=0
         )
 
-        #cv2.imshow("Binary Mask", ctx.binary_mask)
-        #cv2.waitKey(100)
+        cv2.imshow("Binary Mask", ctx.binary_mask)
+        cv2.waitKey(100)
 
         return ctx
