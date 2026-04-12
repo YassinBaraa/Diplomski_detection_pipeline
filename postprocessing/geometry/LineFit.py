@@ -73,32 +73,19 @@ class LineFit(Stage):
         if len(intersections) >= 2:
             p1, p2 = intersections[0], intersections[1]
             ctx.lines = [(p1[0], p1[1], p2[0], p2[1])]
+
+            if "line_fit_image" not in ctx.debug:
+                ctx.debug["line_fit_image"] = ctx.frame.copy()
+
+            cv2.line(
+                ctx.debug["line_fit_image"],
+                (int(p1[0]), int(p1[1])),
+                (int(p2[0]), int(p2[1])),
+                (0, 255, 0),
+                2
+            )
         else:
             ctx.lines = []
-
-        
-        ctx.debug["fit_line"] = {
-            "vx": float(vx),
-            "vy": float(vy),
-            "x0": float(x0),
-            "y0": float(y0),
-            "num_points": int(len(points)),
-        }
-        
-
-
-        if "line_fit_image" not in ctx.debug:
-            ctx.debug["line_fit_image"] = ctx.frame.copy()
-
-        cv2.line(
-            ctx.debug["line_fit_image"],
-            (int(p1[0]), int(p1[1])),
-            (int(p2[0]), int(p2[1])),
-            (0, 255, 0),
-            2
-        )
-        cv2.imshow("Line Fit", ctx.debug["line_fit_image"])
-        cv2.waitKey(100)
 
 
 

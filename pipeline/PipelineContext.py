@@ -5,7 +5,9 @@ import numpy as np
 @dataclass
 class PipelineContext:
     frame: np.ndarray
+    results: Any = None
     detections: Any = None
+    tracks: Any = None
     masks: Any = None
     binary_mask: Optional[np.ndarray] = None
     distance_heatmap: Optional[np.ndarray] = None
