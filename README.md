@@ -63,7 +63,6 @@ Output: best_candidate (position, score, stability status)
 detection_pipeline/
 ├── main.py                              # Entry point
 ├── README.md                            # This file
-├── REPORT.txt                           # Technical report
 ├── config/
 │   ├── __init__.py                      # ConfigManager class
 │   └── default_config.yaml              # Configuration parameters
@@ -74,6 +73,7 @@ detection_pipeline/
 ├── sources/                             # Frame input abstraction
 │   ├── FrameSource.py                  # Abstract interface
 │   ├── MP4Source.py                    # Video file input
+│   ├── example.mp4                     # Test video
 │   └── CameraSource.py                 # Live camera (Raspberry Pi)
 ├── detectors/                           # Object detection layer
 │   ├── Detector.py                     # Abstract interface
@@ -92,10 +92,8 @@ detection_pipeline/
 │   └── scoring/
 │       ├── CandidateScoring.py         # Candidate scoring
 │       └── CandidateVisualizer.py      # Visualization
-├── model/
-│   └── best.pt                         # Pre-trained YOLO model
-└── sources/
-    └── example.mp4                     # Test video
+└── model/
+    └── best.pt                         # Pre-trained YOLO model
 ```
 
 ---
