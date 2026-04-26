@@ -3,3 +3,5 @@
 */runs
 */.venv
 */sam3
+*/CONVERSATION_SUMMARY.md
+*.log

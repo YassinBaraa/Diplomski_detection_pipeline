@@ -1,365 +1,158 @@
-# Detection Pipeline for UAV Branch Hook Attachment
+# Detection Pipeline ROS 1 Noetic Package
 
-## Overview
+A ROS 1 Noetic implementation of the UAV branch detection pipeline for autonomous landing systems.
 
-This project implements a real-time computer vision pipeline for automated branch detection and hook attachment point estimation for UAV autonomous landing systems. It combines YOLO instance segmentation, multi-object tracking, and geometric analysis to identify suitable attachment points on tree branches.
+## Published Topics
 
-**Project Type**: Diplomski rad (Master's Thesis)
-**Status**: Beta / Research Prototype
-**Target Platform**: Embedded systems (Raspberry Pi, UAV edge devices)
+| Topic | Type | Description |
+|-------|------|-------------|
+| `/detection/frame` | `sensor_msgs/Image` | Input BGR frame (640x480 or source resolution) |
+| `/detection/segmentation_masks` | `sensor_msgs/Image` | Binary segmentation mask (mono8) |
+| `/detection/best_candidate` | `geometry_msgs/PointStamped` | Best attachment point candidate |
 
----
+**Best Candidate Point Details** (in `PointStamped.point`):
+- `x`: Pixel x-coordinate
+- `y`: Pixel y-coordinate
+- `z`: Score value (attachment point quality metric)
 
-## System Architecture
+## Building the Package
 
-### Pipeline Stages
+```bash
+# Navigate to ROS workspace
+cd ~/catkin_ws/src
 
-The system processes video frames through a series of specialized stages:
+# Clone/link the package (adjust path as needed)
+ln -s /home/baraa/Desktop/Diplomski/Diplomski_rad/detection_pipeline_ros .
 
-```
-Input Frame
-    ↓
-┌─────────────────────────────────────────────┐
-│ Detection Layer (YOLOBranchSeg)             │
-│ - YOLO instance segmentation                │
-│ - Outputs: bboxes, masks, confidence scores │
-└─────────────────────────────────────────────┘
-    ↓
-┌─────────────────────────────────────────────┐
-│ Tracking Layer (ByteTrack)                  │
-│ - Multi-object tracking across frames       │
-│ - Assigns persistent track IDs              │
-└─────────────────────────────────────────────┘
-    ↓
-┌──────────────────────────────────────────────────┐
-│ Post-Processing Pipeline                        │
-├──────────────────────────────────────────────────┤
-│ 1. MaskExtraction                              │
-│    - Merge segmentation masks → binary image   │
-├──────────────────────────────────────────────────┤
-│ 2. DistanceHeatmap                             │
-│    - Euclidean distance transform              │
-│    - Identifies branch centerlines             │
-├──────────────────────────────────────────────────┤
-│ 3. BitmaskSkeleton                             │
-│    - Morphological skeletonization             │
-│    - 1-pixel-wide medial axis                  │
-├──────────────────────────────────────────────────┤
-│ 4. CandidateScoring (See Limitations)      │
-│    - Score candidate attachment points        │
-│    - Geometric + temporal stability scoring    │
-│    - Apply temporal filtering                  │
-├──────────────────────────────────────────────────┤
-│ 5. CandidateVisualizer                         │
-│    - Render results for visualization          │
-└──────────────────────────────────────────────────┘
-    ↓
-Output: best_candidate (position, score, stability status)
+# Return to workspace root and build
+cd ~/catkin_ws
+catkin_make
+# or use catkin build if installed:
+# catkin build detection_pipeline_ros
+source devel/setup.bash
 ```
 
-### Directory Structure
+## Installation of Python Dependencies
 
+The package uses these external dependencies:
+- `opencv-python` >= 4.5.0
+- `ultralytics` >= 8.0.0
+- `supervision` >= 0.3.0
+- `numpy` >= 1.21.0
+- `PyYAML` >= 5.4
+
+Install them in your ROS container:
+
+```bash
+pip install opencv-python ultralytics supervision numpy PyYAML
 ```
-detection_pipeline/
-├── main.py                              # Entry point
-├── README.md                            # This file
-├── config/
-│   ├── __init__.py                      # ConfigManager class
-│   └── default_config.yaml              # Configuration parameters
-├── pipeline/                            # Core orchestration
-│   ├── DetectionPipeline.py            # Main pipeline executor
-│   ├── PipelineContext.py              # Data container
-│   └── Stage.py                        # Abstract stage base class
-├── sources/                             # Frame input abstraction
-│   ├── FrameSource.py                  # Abstract interface
-│   ├── MP4Source.py                    # Video file input
-│   ├── example.mp4                     # Test video
-│   └── CameraSource.py                 # Live camera (Raspberry Pi)
-├── detectors/                           # Object detection layer
-│   ├── Detector.py                     # Abstract interface
-│   └── YOLOBranchSeg.py                # YOLO segmentation detector
-├── trackers/                            # Object tracking layer
-│   ├── Tracker.py                      # Abstract interface
-│   └── ByteTrack.py                    # ByteTrack implementation
-├── postprocessing/                      # Multi-stage processing
-│   ├── PostProcessor.py                # Stage orchestrator
-│   ├── masks/
-│   │   └── MaskExtraction.py           # Binary mask generation
-│   ├── geometry/
-│   │   ├── DistanceHeatmap.py          # Distance transform
-│   │   ├── BitmaskSkeleton.py          # Skeletonization
-│   │   └── LineFit.py                  # Line fitting (disabled)
-│   └── scoring/
-│       ├── CandidateScoring.py         # Candidate scoring
-│       └── CandidateVisualizer.py      # Visualization
-└── model/
-    └── best.pt                         # Pre-trained YOLO model
-```
-
----
-
-## Installation
-
-### Requirements
-
-- Python 3.8 or higher
-- CUDA 11.8+ (optional, for GPU acceleration)
-
-### Dependencies
-
-- **ultralytics** (≥8.0) - YOLOv8 detection
-- **supervision** (≥0.16) - ByteTrack tracking
-- **opencv-python** (≥4.5) - Computer vision
-- **numpy** (≥1.20) - Numerical operations
-- **scikit-image** (≥0.19) - Skeletonization
-- **pyyaml** (≥6.0) - Configuration parsing
-- **picamera2** (optional) - Raspberry Pi camera support
 
 ## Configuration
 
-### Configuration System
+Configuration is defined in `detection_pipeline_ros/config/default_config.yaml` with these sections:
 
-All parameters are configurable via `config/default_config.yaml`. The system supports:
+```yaml
+source:
+  type: "mp4"              # "mp4" or "camera"
+  video_path: "..."        # Path to video file
 
-1. **YAML configuration file** - Main parameter source
-2. **Environment variable overrides** - Runtime parameter adjustment
-3. **Dot-notation access** - Nested parameter retrieval
+detector:
+  model_path: "..."        # Path to YOLO .pt model
+  confidence_threshold: 0.5
 
+visualization:
+  enabled: true
+  resize_width: 640
+  resize_height: 384
+```
 
-### Environment Variable Overrides
+## Running the Node
 
-Set environment variables before running to override config values:
+### Method 1: Using Launch File
 
 ```bash
-# Override source
-export PIPELINE_SOURCE_TYPE="camera"
-export PIPELINE_VIDEO_PATH="/path/to/video.mp4"
-
-# Override detector confidence
-export PIPELINE_CONF_THRESHOLD="0.3"
-
-# Disable visualization (headless mode)
-export PIPELINE_VISUALIZATION_ENABLED="false"
-
-# Then run
-python3 main.py
+roslaunch detection_pipeline_ros detection_pipeline.launch
 ```
 
----
-
-## Usage
-
-### Basic Usage
+### Method 2: Direct Execution
 
 ```bash
-# Run with default configuration
-python3 main.py
-
-# Stop: Press 'q' or Ctrl+C
+rosrun detection_pipeline_ros detection_node.py
 ```
 
-### Custom Configuration
+### Method 3: With Parameter Overrides
 
 ```bash
-# Use custom config file
-python main.py --config path/to/config.yaml
+rosrun detection_pipeline_ros detection_node.py \
+  _source_type:=mp4 \
+  _video_path:=/path/to/video.mp4 \
+  _model_path:=/path/to/model.pt \
+  _confidence_threshold:=0.5
 ```
 
-### Headless Mode (No Display)
+## Monitoring Output
+
+In another terminal, subscribe to topics:
 
 ```bash
-# Run without visualization (useful for servers/UAVs)
-PIPELINE_VISUALIZATION_ENABLED=false python main.py
+# Watch frame output
+rostopic echo /detection/frame
+
+# Watch best candidate points
+rostopic echo /detection/best_candidate
+
+# Check message rate
+rostopic hz /detection/frame
 ```
 
-### With Custom Video
+## Model Files
+
+Place your YOLO segmentation model in the `model/` directory:
 
 ```bash
-export PIPELINE_VIDEO_PATH="path/to/video.mp4"
-python main.py
+cp /path/to/best_small.pt ./model/
 ```
 
----
-
-## Algorithm Details
-
-### 1. YOLO Detection (YOLOBranchSeg)
-
-**Purpose**: Detect branches and generate segmentation masks
-
-**Process**:
-- Pre-trained YOLOv8 Segment model processes each frame
-- Outputs: bounding boxes, instance masks, confidence scores
-- Configurable confidence threshold (default: 0.5)
-
-**Output**: Boxes (x₁, y₁, x₂, y₂), masks, confidence values
-
-### 2. Multi-Object Tracking (ByteTrack)
-
-**Purpose**: Maintain persistent object identity across frames
-
-**Process**:
-- ByteTrack algorithm associates detections across frames
-- Assigns unique track IDs to branches
-- Handles track initialization and termination
-
-**Output**: List of (bbox, mask, confidence, class_id, track_id, data)
-
-### 3. Binary Mask Extraction (MaskExtraction)
-
-**Purpose**: Combine instance masks into single binary branch image
-
-**Process**:
-- Max-pool all instance masks
-- Apply threshold (default: 0.5)
-- Output: Single binary mask representing all branches
-
-**Output**: Binary image (0=background, 255=branch)
-
-### 4. Distance Heatmap (DistanceHeatmap)
-
-**Purpose**: Compute distance from each pixel to nearest non-branch pixel
-
-**Process**:
-- Euclidean distance transform on binary mask
-- Identifies branch centerlines (maximum distance)
-- Normalized to [0, 1] range
-
-**Output**: Distance heatmap (float32)
-
-### 5. Skeleton Generation (BitmaskSkeleton)
-
-**Purpose**: Reduce branches to 1-pixel-wide medial axis
-
-**Process**:
-- Morphological skeletonization using scikit-image
-- Preserves branch connectivity
-- Essential for identifying junction and endpoint locations
-
-**Output**: Skeleton image (0=non-skeleton, 255=skeleton)
-
-### 6. Candidate Scoring (CandidateScoring) **INCOMPLETE & UNRELIABLE**
-
-** CRITICAL LIMITATION**: This component is not validated against ground truth and should NOT be used for production UAV deployment without extensive validation.
-
-**Purpose**: Score candidate hook attachment points on branch skeleton
-
-**Scoring Formula**:
-
-For each point on skeleton within track bounding box:
-
-```
-geom_score = w_boundary × d_boundary + w_junction × d_junction + w_endpoint × d_endpoint
-
-track_bonus = w_age × age + w_hit_streak × hit_streak + w_conf × conf_avg + w_consistency × consistency
-
-total_score = geom_score + track_bonus
+The model path in config should be relative or absolute. For ROS deployments, use:
+```yaml
+detector:
+  model_path: "${ROS_PACKAGE_PATH}/detection_pipeline_ros/model/best_small.pt"
 ```
 
-**Geometric Factors**:
-- **d_boundary** - Distance to branch center (prefer center points)
-- **d_junction** - Distance to branch junctions (prefer away from junctions)
-- **d_endpoint** - Distance to branch endpoints (prefer away from endpoints)
+## Architecture
 
-**Temporal Factors**:
-- **age** - How long track has existed
-- **hit_streak** - Consecutive frames track was detected
-- **conf_avg** - Average confidence from detector
-- **consistency** - Variance in recent scores
+The pipeline consists of:
+1. **Source**: MP4 file or camera input
+2. **Detection**: YOLO instance segmentation
+3. **Tracking**: ByteTrack multi-object tracking
+4. **Post-processing**:
+   - Mask extraction (binary segmentation)
+   - Distance heatmap (centerline detection)
+   - Skeleton extraction (medial axis)
+   - Candidate scoring (geometric + temporal stability)
+   - Visualization (debug output)
 
-**Default Weights**:
-```
-w_boundary = 1.0    # Strongly prefer branch centers
-w_junction = 0.3    # Weakly penalize junctions
-w_endpoint = 0.2    # Weakly penalize endpoints
-w_age = 0.05        # Weak temporal bonus
-w_hit_streak = 0.1  # Moderate temporal bonus
-w_conf = 0.2        # Consider detector confidence
-w_consistency = 0.1 # Weak stability bonus
-```
+All stages run sequentially in a single ROS 1 node.
 
-**Limitations**:
-- Weights are empirically tuned without ground truth validation
-- No formal justification for weight ratios
-- Spatial clustering uses O(n²) algorithm (not scalable)
-- Temporal locking mechanism is heuristic-based
-- May produce incorrect attachment points
-- Not validated for safety-critical UAV operations
+## Troubleshooting
 
-### 7. Temporal Stability Filtering (CandidateScoring)
+**cv2.imshow() errors**: The pipeline doesn't display windows in ROS (removed from MaskExtraction). Use ROS visualization tools instead.
 
-**Purpose**: Prevent rapid point jitter by locking to stable locations
+**Model not found**: Ensure model path is correct relative to current working directory or provide absolute path.
 
-**Process**:
-1. Maintain buffer of last 10 frame locations
-2. Identify clusters of points within 15-pixel radius
-3. Lock candidate when cluster appears in 5+ consecutive frames
-4. Validate locked point still exists on skeleton
-5. Release lock if point drifts or track disappears
-
-**Output**: best_candidate with `is_stable` flag
-
-### 8. Visualization (CandidateVisualizer)
-
-**Display Elements**:
-- **Skeleton** (dark gray) - Branch medial axis
-- **Candidate points** (blue/green) - Scoring candidates
-- **Best candidate** (red circle) - Top-scoring point
-- **Statistics** - Frame counts, stability progress
-
-**Color Coding**:
-- 🔵 Blue: Unconfirmed candidates
-- 🟢 Green: Confirmed candidates (≥3 frames)
-- 🔴 Red: Unstable best candidate
-- 🟢 Green: Stable best candidate (locked)
-
----
-
-## Output Format
-
-The pipeline yields `PipelineContext` objects with:
-
-### best_candidate Dictionary
-
-```python
-{
-    "track_id": int,                    # Unique track identifier
-    "x": int,                           # Pixel x-coordinate
-    "y": int,                           # Pixel y-coordinate
-    "score": float,                     # Combined scoring value
-    "geom_score": float,                # Geometric component
-    "track_bonus": float,               # Temporal component
-    "distance_to_boundary": float,      # Distance to branch center
-    "distance_to_junction": float,      # Distance to nearest junction
-    "distance_to_endpoint": float,      # Distance to nearest endpoint
-    "track_age": int,                   # Frames track has existed
-    "hit_streak": int,                  # Consecutive frames detected
-    "confidence_avg": float,            # Average detector confidence
-    "consistency_score": float,         # Score variance metric
-    "confirmed": bool,                  # Hit streak ≥ min_confirm_frames
-    "is_stable": bool,                  # Locked to stable location?
-    "bbox": (x1, y1, x2, y2)           # Track bounding box
-}
+**Import errors**: Check that all python dependencies are installed and package is sourced:
+```bash
+source ~/catkin_ws/devel/setup.bash
 ```
 
-### candidates List
+**Slow processing**: Monitor GPU usage; ensure YOLO model is appropriate for hardware.
 
-List of `best_per_track` - one candidate per tracked branch
+## Future Improvements
 
----
+- Multi-node architecture (detection, tracking, post-processing as separate nodes)
+- Configurable message queuing and frame dropping
+- ROS service for model switching
+- Performance metrics publisher
+- Integration with ROS 1 camera drivers
 
-## References
 
-1. **YOLOv8**: Ultralytics YOLOv8 Documentation
-   - https://docs.ultralytics.com
-
-2. **ByteTrack**: Multi-Object Tracking Framework
-   - GitHub: https://github.com/ifzhang/ByteTrack
-   - Paper: Zhang et al., "ByteTrack: Multi-Object Tracking by Associating Every Detection Box"
-
-3. **Supervision**: Detection & Tracking Toolkit
-   - https://supervision.roboflow.com
-
-4. **Image Processing**:
-   - Distance Transform: https://docs.opencv.org/master/d3/db0/classcv_1_1DistanceTransformLabelTypes.html
-   - Skeletonization: https://scikit-image.org/docs/stable/auto_examples/edges/plot_skeleton.html

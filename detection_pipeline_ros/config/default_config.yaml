@@ -1,0 +1,52 @@
+# Detection Pipeline Configuration
+
+# Source Configuration
+source:
+  type: "mp4"  # "mp4" or "camera"
+  video_path: "sources/example.mp4"  # Path to video file
+
+# Detector Configuration (YOLO)
+detector:
+  model_path: "model/best_small.pt"
+  confidence_threshold: 0.5
+
+# Camera Configuration (if source type is "camera")
+camera:
+  resolution_width: 1280
+  resolution_height: 720
+  format: "RGB888"
+
+# Post-Processing: Mask Extraction
+mask_extraction:
+  bitmask_threshold: 0.5
+
+# Post-Processing: Candidate Scoring
+candidate_scoring:
+  # Geometric scoring weights
+  w_boundary: 1.0
+  w_junction: 0.3
+  w_endpoint: 0.2
+
+  # Geometric thresholds
+  min_distance_to_boundary: 0.5
+  junction_neighbor_threshold: 3
+
+  # Track bonus weights
+  w_track_age: 0.05
+  w_hit_streak: 0.1
+  w_conf: 0.2
+  w_consistency: 0.1
+
+  # Temporal stability
+  min_confirm_frames: 3
+  stability_buffer_size: 10
+  stability_threshold: 5
+  spatial_cluster_radius: 15
+  track_cleanup_frames: 30
+
+# Visualization
+visualization:
+  enabled: true
+  resize_width: 640
+  resize_height: 384
+  display_window_name: "Detection Pipeline"

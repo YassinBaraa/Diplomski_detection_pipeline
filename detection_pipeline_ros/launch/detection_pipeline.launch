@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Detection pipeline launch file for ROS 1 Noetic -->
+
+  <!-- Arguments -->
+  <arg name="video_path" default="sources/example.mp4" />
+  <arg name="model_path" default="model/best_small.pt" />
+  <arg name="confidence_threshold" default="0.5" />
+  <arg name="config_path" default="" />
+  <arg name="source_type" default="mp4" />
+
+  <!-- Detection node -->
+  <node pkg="detection_pipeline_ros" type="detection_node.py" name="detection_pipeline_node" output="screen">
+    <param name="video_path" value="$(arg video_path)" />
+    <param name="model_path" value="$(arg model_path)" />
+    <param name="confidence_threshold" value="$(arg confidence_threshold)" />
+    <param name="config_path" value="$(arg config_path)" />
+    <param name="source_type" value="$(arg source_type)" />
+  </node>
+
+</launch>
