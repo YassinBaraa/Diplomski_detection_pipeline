@@ -16,3 +16,11 @@ class MP4Source(FrameSource):
 
     def release(self):
         self.cap.release()
+
+    def start_recording(self):
+        # No recording functionality for MP4Source
+        pass
+
+    def stop_recording(self):
+        # No recording functionality for MP4Source
+        pass

@@ -19,3 +19,9 @@ class CameraSource(FrameSource):
     def release(self):
         self.picam2.stop()
         self.picam2.close()
+
+    def start_recording(self, output_path = "/home/baraa/Desktop/Diplomski/Diplomski_rad/detection_pipeline/sources"):
+        self.picam2.start_recording(output_path)
+
+    def stop_recording(self):
+        self.picam2.stop_recording()

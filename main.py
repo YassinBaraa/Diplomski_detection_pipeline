@@ -35,6 +35,7 @@ def main():
 
     # Initialize source
     source = MP4Source(config.get("source.video_path"))
+    source.start_recording()  # Start recording if using CameraSource
 
     # Initialize detector
     detector = YOLOBranchSeg(
@@ -90,8 +91,10 @@ def main():
         logger.error(f"Pipeline error: {e}", exc_info=True)
     finally:
         source.release()
+        source.stop_recording()  # Stop recording if using CameraSource
         cv2.destroyAllWindows()
         logger.info(f"Pipeline complete. Processed {frame_count} frames total")
+
 
 
 if __name__ == "__main__":
