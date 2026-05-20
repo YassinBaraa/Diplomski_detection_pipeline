@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   message_filters
   message_generation
+  visualization_msgs
 )
 
 catkin_python_setup()
@@ -25,13 +26,14 @@ generate_messages(
 )
 
 catkin_package(
-  CATKIN_DEPENDS message_runtime rospy sensor_msgs geometry_msgs std_msgs cv_bridge message_filters
+  CATKIN_DEPENDS message_runtime rospy sensor_msgs geometry_msgs std_msgs cv_bridge message_filters visualization_msgs
 )
 
 # Install Python executables
 install(PROGRAMS
   detection_pipeline_ros/detection_node.py
   detection_pipeline_ros/udp_receiver_node.py
+  detection_pipeline_ros/lidar_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

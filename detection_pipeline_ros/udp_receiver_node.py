@@ -8,7 +8,7 @@ import rospy
 from sensor_msgs.msg import Image
 
 from detection_pipeline_ros.msg import Detection, DetectionArray
-from detection_pipeline_ros.udp_packet import DetectionPacket
+from crow_ws.src.Diplomski_detection_pipeline.detection_pipeline_ros.udp.udp_packet import DetectionPacket
 
 
 class UdpDetectionReceiver:

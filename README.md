@@ -56,6 +56,15 @@ Install them in your ROS container:
 pip install opencv-python ultralytics supervision numpy PyYAML
 ```
 
+## PCL (required for `lidar_node.py`)
+
+The LiDAR node depends on the Python PCL bindings (`import pcl`). Install the Ubuntu package:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y python3-pcl
+```
+
 ## Configuration
 
 The detection node consumes `/udp/frame` and `/udp/detections`. The legacy YAML config for local video/model sources is not used by the current node.
