@@ -1,0 +1,9 @@
+float32[4] bbox
+float32 confidence
+int32 class_id
+bool has_tracker_id
+int32 tracker_id
+uint32 mask_height
+uint32 mask_width
+uint8[] mask
+string data

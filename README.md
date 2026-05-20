@@ -6,7 +6,7 @@ A ROS 1 Noetic implementation of the UAV branch detection pipeline for autonomou
 
 | Topic | Type | Description |
 |-------|------|-------------|
-| `/detection/frame` | `sensor_msgs/Image` | Input BGR frame (640x480 or source resolution) |
+| `/detection/frame` | `sensor_msgs/Image` | Republished BGR frame from `/udp/frame` |
 | `/detection/segmentation_masks` | `sensor_msgs/Image` | Binary segmentation mask (mono8) |
 | `/detection/best_candidate` | `geometry_msgs/PointStamped` | Best attachment point candidate |
 
@@ -14,6 +14,15 @@ A ROS 1 Noetic implementation of the UAV branch detection pipeline for autonomou
 - `x`: Pixel x-coordinate
 - `y`: Pixel y-coordinate
 - `z`: Score value (attachment point quality metric)
+
+## Subscribed Topics
+
+| Topic | Type | Description |
+|-------|------|-------------|
+| `/udp/frame` | `sensor_msgs/Image` | Frame published by the UDP receiver/server |
+| `/udp/detections` | `detection_pipeline_ros/DetectionArray` | Detections for each frame |
+| `/livox/lidar` | `sensor_msgs/PointCloud2` | Livox lidar point cloud |
+| `/livox/imu` | `sensor_msgs/Imu` | Livox IMU data |
 
 ## Building the Package
 
@@ -49,22 +58,7 @@ pip install opencv-python ultralytics supervision numpy PyYAML
 
 ## Configuration
 
-Configuration is defined in `detection_pipeline_ros/config/default_config.yaml` with these sections:
-
-```yaml
-source:
-  type: "mp4"              # "mp4" or "camera"
-  video_path: "..."        # Path to video file
-
-detector:
-  model_path: "..."        # Path to YOLO .pt model
-  confidence_threshold: 0.5
-
-visualization:
-  enabled: true
-  resize_width: 640
-  resize_height: 384
-```
+The detection node consumes `/udp/frame` and `/udp/detections`. The legacy YAML config for local video/model sources is not used by the current node.
 
 ## Running the Node
 
@@ -84,10 +78,31 @@ rosrun detection_pipeline_ros detection_node.py
 
 ```bash
 rosrun detection_pipeline_ros detection_node.py \
-  _source_type:=mp4 \
-  _video_path:=/path/to/video.mp4 \
-  _model_path:=/path/to/model.pt \
-  _confidence_threshold:=0.5
+  _frame_topic:=/udp/frame \
+  _detections_topic:=/udp/detections \
+  _lidar_topic:=/livox/lidar \
+  _imu_topic:=/livox/imu
+```
+
+## UDP Receiver Node
+
+Listens for UDP `DetectionPacket` frames and republishes them as ROS topics.
+
+### Topics
+
+| Topic | Type | Description |
+|-------|------|-------------|
+| `/udp/frame` | `sensor_msgs/Image` | JPEG-decoded BGR frame |
+| `/udp/detections` | `detection_pipeline_ros/DetectionArray` | Decoded detection list |
+
+**Detection fields** (`detection_pipeline_ros/Detection`):
+`bbox [x1,y1,x2,y2]`, `confidence`, `class_id`, `has_tracker_id`, `tracker_id`,
+`mask_height`, `mask_width`, `mask` (flattened `uint8`), `data` (JSON string).
+
+### Run
+
+```bash
+roslaunch detection_pipeline_ros udp_receiver.launch
 ```
 
 ## Monitoring Output
@@ -103,20 +118,6 @@ rostopic echo /detection/best_candidate
 
 # Check message rate
 rostopic hz /detection/frame
-```
-
-## Model Files
-
-Place your YOLO segmentation model in the `model/` directory:
-
-```bash
-cp /path/to/best_small.pt ./model/
-```
-
-The model path in config should be relative or absolute. For ROS deployments, use:
-```yaml
-detector:
-  model_path: "${ROS_PACKAGE_PATH}/detection_pipeline_ros/model/best_small.pt"
 ```
 
 ## Architecture
@@ -154,5 +155,3 @@ source ~/catkin_ws/devel/setup.bash
 - ROS service for model switching
 - Performance metrics publisher
 - Integration with ROS 1 camera drivers
-
-

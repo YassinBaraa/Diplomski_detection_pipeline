@@ -7,15 +7,31 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   std_msgs
   cv_bridge
+  message_filters
+  message_generation
 )
 
 catkin_python_setup()
 
-catkin_package()
+add_message_files(
+  FILES
+  Detection.msg
+  DetectionArray.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+
+catkin_package(
+  CATKIN_DEPENDS message_runtime rospy sensor_msgs geometry_msgs std_msgs cv_bridge message_filters
+)
 
 # Install Python executables
 install(PROGRAMS
   detection_pipeline_ros/detection_node.py
+  detection_pipeline_ros/udp_receiver_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

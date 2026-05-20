@@ -31,16 +31,7 @@ pip install -r src/detection_pipeline_ros/requirements.txt
 - numpy
 - PyYAML (config)
 
-## Step 3: Prepare Model Files
-
-```bash
-# Copy your YOLO model
-cp /path/to/best_small.pt src/detection_pipeline_ros/model/
-
-# Or set path in config/default_config.yaml
-```
-
-## Step 4: Build Package
+## Step 3: Build Package
 
 ```bash
 cd ~/catkin_ws
@@ -50,30 +41,23 @@ catkin build detection_pipeline_ros
 source devel/setup.bash
 ```
 
-## Step 5: Run the Pipeline
+## Step 4: Run the Pipeline
 
 ### Option A: Using Launch File
 ```bash
-roslaunch detection_pipeline_ros detection_pipeline.launch \
-  video_path:=/path/to/video.mp4 \
-  model_path:=/path/to/model.pt
+roslaunch detection_pipeline_ros detection_pipeline.launch
 ```
 
 ### Option B: Direct Execution
 ```bash
 rosrun detection_pipeline_ros detection_node.py \
-  _source_type:=mp4 \
-  _video_path:=/path/to/video.mp4 \
-  _model_path:=/path/to/model.pt
+  _frame_topic:=/udp/frame \
+  _detections_topic:=/udp/detections \
+  _lidar_topic:=/livox/lidar \
+  _imu_topic:=/livox/imu
 ```
 
-### Option C: Using Config File
-Edit `detection_pipeline_ros/config/default_config.yaml`, then:
-```bash
-roslaunch detection_pipeline_ros detection_pipeline.launch
-```
-
-## Step 6: Monitor Output
+## Step 5: Monitor Output
 
 Open new terminal(s):
 
@@ -105,26 +89,14 @@ rostopic hz /detection/frame
 | `/detection/segmentation_masks` | sensor_msgs/Image | Same as frame |
 | `/detection/best_candidate` | geometry_msgs/PointStamped | Same as frame |
 
-## Configuration Reference
+## Topics Subscribed
 
-Edit `detection_pipeline_ros/config/default_config.yaml`:
-
-```yaml
-source:
-  type: "mp4"              # or "camera"
-  video_path: "..."
-
-detector:
-  model_path: "..."
-  confidence_threshold: 0.5
-
-candidate_scoring:
-  w_boundary: 1.0          # Boundary distance weight
-  w_junction: 0.3          # Junction penalty weight
-  w_endpoint: 0.2          # Endpoint penalty weight
-  min_confirm_frames: 3    # Frames to confirm track
-  stability_threshold: 5   # Buffer size for stability
-```
+| Topic | Type | Frequency |
+|-------|------|-----------|
+| `/udp/frame` | sensor_msgs/Image | Depends on server |
+| `/udp/detections` | detection_pipeline_ros/DetectionArray | Depends on server |
+| `/livox/lidar` | sensor_msgs/PointCloud2 | Sensor rate |
+| `/livox/imu` | sensor_msgs/Imu | Sensor rate |
 
 ## Common Issues
 
@@ -133,11 +105,6 @@ candidate_scoring:
 cd ~/catkin_ws
 source devel/setup.bash
 ```
-
-**Problem**: Model file not found
-- Check path in config or command-line parameter
-- Use absolute paths if relative paths don't work
-- Ensure model is in `model/` directory
 
 **Problem**: Low FPS
 - Check GPU availability: `nvidia-smi`

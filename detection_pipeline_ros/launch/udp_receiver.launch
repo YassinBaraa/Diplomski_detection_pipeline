@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="bind_ip" default="192.168.1.82" />
+  <arg name="bind_port" default="5005" />
+  <arg name="frame_topic" default="/udp/frame" />
+  <arg name="detections_topic" default="/udp/detections" />
+  <arg name="frame_id" default="udp_frame" />
+  <arg name="max_packet_size" default="65507" />
+  <arg name="socket_timeout" default="0.5" />
+
+  <node pkg="detection_pipeline_ros" type="udp_receiver_node.py" name="udp_detection_receiver" output="screen">
+    <param name="bind_ip" value="$(arg bind_ip)" />
+    <param name="bind_port" value="$(arg bind_port)" />
+    <param name="frame_topic" value="$(arg frame_topic)" />
+    <param name="detections_topic" value="$(arg detections_topic)" />
+    <param name="frame_id" value="$(arg frame_id)" />
+    <param name="max_packet_size" value="$(arg max_packet_size)" />
+    <param name="socket_timeout" value="$(arg socket_timeout)" />
+  </node>
+</launch>

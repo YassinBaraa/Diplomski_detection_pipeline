@@ -1,24 +1,5 @@
 # Detection Pipeline Configuration
 
-# Source Configuration
-source:
-  type: "mp4"  # "mp4" or "camera"
-  video_path: "sources/example.mp4"  # Path to video file
-
-# Detector Configuration (YOLO)
-detector:
-  model_path: "model/best_small.pt"
-  confidence_threshold: 0.5
-
-# Camera Configuration (if source type is "camera")
-camera:
-  resolution_width: 1280
-  resolution_height: 720
-  format: "RGB888"
-
-# Post-Processing: Mask Extraction
-mask_extraction:
-  bitmask_threshold: 0.5
 
 # Post-Processing: Candidate Scoring
 candidate_scoring:
