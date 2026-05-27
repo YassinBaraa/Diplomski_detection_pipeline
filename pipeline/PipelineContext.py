@@ -5,8 +5,11 @@ import numpy as np
 @dataclass
 class PipelineContext:
     frame: np.ndarray
+    source_metadata: Optional[dict] = None
     results: Any = None
     detections: Any = None
+    confidences: Any = None
+    class_ids: Any = None
     tracks: Any = None
     masks: Any = None
     binary_mask: Optional[np.ndarray] = None

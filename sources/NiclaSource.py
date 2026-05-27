@@ -1,12 +1,12 @@
 import cv2
-from FrameSource import FrameSource
+from sources.FrameSource import FrameSource
 import serial
 import time
 import cv2
 import numpy as np
 
 class NiclaSource(FrameSource):
-    def __init__(self, video_path):
+    def __init__(self):
         time.sleep(3)  # let Nicla boot
         self.ser = serial.Serial('/dev/ttyACM0', 115200, timeout=2)
 

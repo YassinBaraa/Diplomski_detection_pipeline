@@ -1,8 +1,8 @@
-#from sources.CameraSource import CameraSource
-#from sources.MP4Source import MP4Source
+from sources.CameraSource import CameraSource
+from sources.MP4Source import MP4Source
 from sources.NiclaSource import NiclaSource
 
-#from detectors.YOLOBranchDet import YOLOBranchDet
+from detectors.HailoSegDetector import HailoSegDetector
 from detectors.YOLOBranchSeg import YOLOBranchSeg
 
 from trackers.ByteTrack import ByteTrack
@@ -40,27 +40,47 @@ def main():
     logger.info("Starting Detection Pipeline")
 
     # Initialize source
-    source = NiclaSource(config.get("source.video_path"))
-    #source.start_recording()  
+    source_type = config.get("source.type", "mp4")
+    if source_type == "mp4":
+        source = MP4Source(config.get("source.video_path"))
+    elif source_type == "camera":
+        source = CameraSource()
+    elif source_type == "nicla":
+        source = NiclaSource()
+    else:
+        raise ValueError(f"Unsupported source type: {source_type}")
 
     # Initialize detector
-    detector = YOLOBranchSeg(
-        model_path=config.get("detector.model_path"),
-        conf=config.get("detector.confidence_threshold")
-    )
+    detector_type = config.get("detector.type", "yolo_seg")
+    detector_model_path = config.get("detector.model_path")
+    detector_conf = config.get("detector.confidence_threshold")
+
+    if detector_type == "hailo_seg":
+        detector = HailoSegDetector(
+            hef_path=detector_model_path,
+            conf=detector_conf,
+        )
+    elif detector_type == "yolo_seg":
+        detector = YOLOBranchSeg(
+            model_path=detector_model_path,
+            conf=detector_conf,
+        )
+    else:
+        raise ValueError(f"Unsupported detector type: {detector_type}")
 
     # Initialize tracker
     tracker = ByteTrack(detector)
 
-    # Initialize postprocessor stages
-    postprocessor = PostProcessor([
-        MaskExtraction(),
-        DistanceHeatmap(),
-        BitmaskSkeleton(),
-        #LineFit(),
-        CandidateScoring(),
-        CandidateVisualizer(),
-    ])
+    # Initialize postprocessor stages (disabled for testing)
+    # postprocessor = PostProcessor([
+    #     MaskExtraction(),
+    #     DistanceHeatmap(),
+    #     BitmaskSkeleton(),
+    #     #LineFit(),
+    #     CandidateScoring(),
+    #     CandidateVisualizer(),
+    # ])
+    postprocessor = None
 
     # Create and run pipeline
     pipeline = DetectionPipeline(

@@ -60,11 +60,12 @@ class HailoSegDetector(Detector):
 
         if not dets:
             empty = np.array([])
-            return None, empty, None, empty, empty
+            empty_ids = np.array([], dtype=np.int32)
+            return None, empty, None, empty, empty_ids
 
         bboxes      = np.array([[d[0], d[1], d[2], d[3]] for d in dets], dtype=np.float32)
         confidences = np.array([d[4] for d in dets],                      dtype=np.float32)
-        class_ids   = np.zeros(len(dets), dtype=np.float32)
+        class_ids   = np.zeros(len(dets), dtype=np.int32)
 
         # Build per-detection binary masks at frame resolution
         masks = None

@@ -1,5 +1,6 @@
 import supervision as sv
 import cv2
+import numpy as np
 
 from trackers.Tracker import Tracker
 
@@ -11,10 +12,29 @@ class ByteTrack(Tracker):
         self.label_annotator = label_annotator if label_annotator is not None else sv.LabelAnnotator()
         self.detector = detector
 
-    def track(self, frame, results):
+    def track(self, frame, results=None, bboxes=None, masks=None, confidences=None, class_ids=None):
+        if isinstance(results, sv.Detections):
+            detections = results
+        elif results is not None:
+            detections = sv.Detections.from_ultralytics(results)
+        elif bboxes is not None and len(bboxes) > 0:
+            if confidences is None or len(confidences) == 0:
+                confidences = np.zeros(len(bboxes), dtype=np.float32)
+            if class_ids is None or len(class_ids) == 0:
+                class_ids = np.zeros(len(bboxes), dtype=np.int32)
+            if masks is not None and len(masks) == 0:
+                masks = None
 
-        track = sv.Detections.from_ultralytics(results)
-        track = self.tracker.update_with_detections(track)
+            detections = sv.Detections(
+                xyxy=np.array(bboxes, dtype=np.float32),
+                mask=masks,
+                confidence=np.array(confidences, dtype=np.float32),
+                class_id=np.array(class_ids, dtype=np.int32),
+            )
+        else:
+            return []
+
+        track = self.tracker.update_with_detections(detections)
 
         # Convert supervision Detections to iterable format for downstream processing
         # Format: (xyxy, mask, confidence, class_id, tracker_id, data)

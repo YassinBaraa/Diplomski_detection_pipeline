@@ -2,13 +2,17 @@
 
 # Source Configuration
 source:
-  type: "mp4"  # "mp4" or "camera"
+  type: "nicla"  # "mp4", "camera", or "nicla"
   video_path: "sources/example.mp4"  # Path to video file
+  nicla_serial_port: "/dev/ttyACM0"
+  nicla_baudrate: 115200
+  nicla_boot_delay_sec: 3
 
-# Detector Configuration (YOLO)
+# Detector Configuration
 detector:
-  model_path: "model/best_small.pt"
-  confidence_threshold: 0.5
+  type: "hailo_seg"  # "yolo_seg" or "hailo_seg"
+  model_path: "model/yolov8_segmentation.hef"
+  confidence_threshold: 0.6
 
 # Camera Configuration (if source type is "camera")
 camera:

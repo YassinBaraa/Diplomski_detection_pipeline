@@ -14,7 +14,7 @@ class CameraSource(FrameSource):
     def read(self):
         frame = self.picam2.capture_array()
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        return True, frame
+        return True, frame, None
 
     def release(self):
         self.picam2.stop()

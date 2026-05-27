@@ -46,8 +46,22 @@ class ConfigManager:
             self.config["source"]["type"] = os.environ["PIPELINE_SOURCE_TYPE"]
         if "PIPELINE_VIDEO_PATH" in os.environ:
             self.config["source"]["video_path"] = os.environ["PIPELINE_VIDEO_PATH"]
+        if "PIPELINE_NICLA_SERIAL_PORT" in os.environ:
+            self.config["source"]["nicla_serial_port"] = os.environ["PIPELINE_NICLA_SERIAL_PORT"]
+        if "PIPELINE_NICLA_BAUDRATE" in os.environ:
+            try:
+                self.config["source"]["nicla_baudrate"] = int(os.environ["PIPELINE_NICLA_BAUDRATE"])
+            except ValueError:
+                logger.warning("Invalid PIPELINE_NICLA_BAUDRATE, using default")
+        if "PIPELINE_NICLA_BOOT_DELAY_SEC" in os.environ:
+            try:
+                self.config["source"]["nicla_boot_delay_sec"] = int(os.environ["PIPELINE_NICLA_BOOT_DELAY_SEC"])
+            except ValueError:
+                logger.warning("Invalid PIPELINE_NICLA_BOOT_DELAY_SEC, using default")
 
         # Detector overrides
+        if "PIPELINE_DETECTOR_TYPE" in os.environ:
+            self.config["detector"]["type"] = os.environ["PIPELINE_DETECTOR_TYPE"]
         if "PIPELINE_MODEL_PATH" in os.environ:
             self.config["detector"]["model_path"] = os.environ["PIPELINE_MODEL_PATH"]
         if "PIPELINE_CONF_THRESHOLD" in os.environ:

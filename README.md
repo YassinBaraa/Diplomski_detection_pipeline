@@ -20,8 +20,8 @@ The system processes video frames through a series of specialized stages:
 Input Frame
     ↓
 ┌─────────────────────────────────────────────┐
-│ Detection Layer (YOLOBranchSeg)             │
-│ - YOLO instance segmentation                │
+│ Detection Layer (YOLOBranchSeg/HailoSeg)    │
+│ - YOLO or Hailo instance segmentation       │
 │ - Outputs: bboxes, masks, confidence scores │
 └─────────────────────────────────────────────┘
     ↓
@@ -74,10 +74,12 @@ detection_pipeline/
 │   ├── FrameSource.py                  # Abstract interface
 │   ├── MP4Source.py                    # Video file input
 │   ├── example.mp4                     # Test video
-│   └── CameraSource.py                 # Live camera (Raspberry Pi)
+│   ├── CameraSource.py                 # Live camera (Raspberry Pi)
+│   └── NiclaSource.py                  # Nicla Vision input (serial)
 ├── detectors/                           # Object detection layer
 │   ├── Detector.py                     # Abstract interface
-│   └── YOLOBranchSeg.py                # YOLO segmentation detector
+│   ├── YOLOBranchSeg.py                # YOLO segmentation detector
+│   └── HailoSegDetector.py             # Hailo segmentation detector
 ├── trackers/                            # Object tracking layer
 │   ├── Tracker.py                      # Abstract interface
 │   └── ByteTrack.py                    # ByteTrack implementation
@@ -108,6 +110,7 @@ detection_pipeline/
 ### Dependencies
 
 - **ultralytics** (≥8.0) - YOLOv8 detection
+- **hailo_platform** - Hailo runtime (required for Hailo models)
 - **supervision** (≥0.16) - ByteTrack tracking
 - **opencv-python** (≥4.5) - Computer vision
 - **numpy** (≥1.20) - Numerical operations
@@ -132,9 +135,12 @@ Set environment variables before running to override config values:
 
 ```bash
 # Override source
-export PIPELINE_SOURCE_TYPE="camera"
+export PIPELINE_SOURCE_TYPE="nicla"
 export PIPELINE_VIDEO_PATH="/path/to/video.mp4"
+export PIPELINE_NICLA_SERIAL_PORT="/dev/ttyACM0"
 
+# Override detector
+export PIPELINE_DETECTOR_TYPE="hailo_seg"
 # Override detector confidence
 export PIPELINE_CONF_THRESHOLD="0.3"
 
@@ -193,6 +199,14 @@ python main.py
 - Configurable confidence threshold (default: 0.5)
 
 **Output**: Boxes (x₁, y₁, x₂, y₂), masks, confidence values
+
+### 1b. Hailo Segmentation (HailoSegDetector)
+
+**Purpose**: Run YOLOv8-style segmentation on Hailo hardware using HEF models
+
+**Process**:
+- Hailo runtime executes segmentation model
+- Outputs: bounding boxes, instance masks, confidence scores
 
 ### 2. Multi-Object Tracking (ByteTrack)
 
@@ -345,6 +359,16 @@ The pipeline yields `PipelineContext` objects with:
 ### candidates List
 
 List of `best_per_track` - one candidate per tracked branch
+
+### source_metadata (optional)
+
+When using `NiclaSource`, `PipelineContext.source_metadata` includes:
+
+```python
+{
+    "distance_mm": int
+}
+```
 
 ---
 
