@@ -11,8 +11,8 @@ class MP4Source(FrameSource):
     def read(self):
         ret, frame = self.cap.read()
         if not ret or frame is None:
-            return False, None, None
-        return ret, frame, None
+            return False, None
+        return ret, frame
 
     def release(self):
         self.cap.release()

@@ -41,6 +41,13 @@ class ConfigManager:
 
     def _apply_env_overrides(self):
         """Apply environment variable overrides to config."""
+        if "source" not in self.config:
+            self.config["source"] = {}
+        if "detector" not in self.config:
+            self.config["detector"] = {}
+        if "visualization" not in self.config:
+            self.config["visualization"] = {}
+        
         # Source overrides
         if "PIPELINE_SOURCE_TYPE" in os.environ:
             self.config["source"]["type"] = os.environ["PIPELINE_SOURCE_TYPE"]

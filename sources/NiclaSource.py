@@ -2,7 +2,6 @@ import cv2
 from sources.FrameSource import FrameSource
 import serial
 import time
-import cv2
 import numpy as np
 
 class NiclaSource(FrameSource):
@@ -17,11 +16,10 @@ class NiclaSource(FrameSource):
             jpg_data = self.ser.read(length)
             dist_line = self.ser.readline().decode(errors='ignore').strip()
             dist_mm = int(dist_line.split(":")[1])
-            #print(f"Frame: {length} bytes | Distance: {dist_mm} mm")
 
             img = cv2.imdecode(np.frombuffer(jpg_data, dtype=np.uint8), cv2.IMREAD_COLOR)
 
-            return True, img, dist_mm
+            return True, img, {"distance_mm": dist_mm}
         
         return False, None, None
 

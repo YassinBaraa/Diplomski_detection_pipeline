@@ -99,17 +99,23 @@ def main():
             frame_count += 1
 
             # Display visualization if enabled
-            if visualization_enabled and "branch_score_image" in ctx.debug:
+            if visualization_enabled:
+                # If no postprocessing visualization, show the frame with detections
+                if "branch_score_image" in ctx.debug:
+                    display_image = ctx.debug["branch_score_image"]
+                else:
+                    display_image = ctx.frame
+                
                 cv2.imshow(
-                    config.get("visualization.display_window_name"),
-                    ctx.debug["branch_score_image"]
+                    config.get("visualization.display_window_name", "Detection Pipeline"),
+                    display_image
                 )
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     logger.info("User quit")
                     break
 
             if frame_count % 30 == 0:
-                logger.debug(f"Processed {frame_count} frames")
+                logger.info(f"Processed {frame_count} frames")
 
     except KeyboardInterrupt:
         logger.info("Pipeline interrupted by user")

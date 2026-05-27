@@ -152,5 +152,14 @@ class HailoSegDetector(Detector):
         return [detections[i] for i in indices.flatten()], proto
 
     def release(self):
-        self._configured.deactivate()
-        self._device.__exit__(None, None, None)
+        try:
+            if self._configured is not None:
+                self._configured.deactivate()
+        except Exception as e:
+            print(f"Error deactivating Hailo config: {e}")
+        
+        try:
+            if self._device is not None:
+                self._device.__exit__(None, None, None)
+        except Exception as e:
+            print(f"Error closing Hailo device: {e}")

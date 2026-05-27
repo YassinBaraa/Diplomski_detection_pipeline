@@ -17,5 +17,6 @@ class YOLOBranchSeg(Detector):
         bboxes = results[0].boxes.xyxy.cpu().numpy() if results[0].boxes is not None else np.array([])
         masks = results[0].masks.data.cpu().numpy() if results[0].masks is not None else None
         confidences = results[0].boxes.conf.cpu().numpy() if results[0].boxes is not None else np.array([])
+        class_ids = results[0].boxes.cls.cpu().numpy().astype(np.int32) if results[0].boxes is not None else np.array([], dtype=np.int32)
 
-        return results[0], bboxes, masks, confidences
+        return results[0], bboxes, masks, confidences, class_ids
