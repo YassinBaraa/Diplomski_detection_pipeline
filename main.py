@@ -1,7 +1,12 @@
 #from sources.CameraSource import CameraSource
-from sources.MP4Source import MP4Source
+#from sources.MP4Source import MP4Source
+from sources.NiclaSource import NiclaSource
+
+#from detectors.YOLOBranchDet import YOLOBranchDet
 from detectors.YOLOBranchSeg import YOLOBranchSeg
+
 from trackers.ByteTrack import ByteTrack
+
 from postprocessing.PostProcessor import PostProcessor
 from postprocessing.masks.MaskExtraction import MaskExtraction
 from postprocessing.geometry.DistanceHeatmap import DistanceHeatmap
@@ -9,6 +14,7 @@ from postprocessing.geometry.BitmaskSkeleton import BitmaskSkeleton
 #from postprocessing.geometry.LineFit import LineFit
 from postprocessing.scoring.CandidateScoring import CandidateScoring
 from postprocessing.scoring.CandidateVisualizer import CandidateVisualizer
+
 from pipeline.DetectionPipeline import DetectionPipeline
 from config import ConfigManager
 
@@ -34,8 +40,8 @@ def main():
     logger.info("Starting Detection Pipeline")
 
     # Initialize source
-    source = MP4Source(config.get("source.video_path"))
-    source.start_recording()  # Start recording if using CameraSource
+    source = NiclaSource(config.get("source.video_path"))
+    #source.start_recording()  
 
     # Initialize detector
     detector = YOLOBranchSeg(
@@ -91,7 +97,7 @@ def main():
         logger.error(f"Pipeline error: {e}", exc_info=True)
     finally:
         source.release()
-        source.stop_recording()  # Stop recording if using CameraSource
+        #source.stop_recording()  
         cv2.destroyAllWindows()
         logger.info(f"Pipeline complete. Processed {frame_count} frames total")
 
