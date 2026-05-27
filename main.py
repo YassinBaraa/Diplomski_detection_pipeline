@@ -11,26 +11,55 @@ from postprocessing.PostProcessor import PostProcessor
 from postprocessing.masks.MaskExtraction import MaskExtraction
 from postprocessing.geometry.DistanceHeatmap import DistanceHeatmap
 from postprocessing.geometry.BitmaskSkeleton import BitmaskSkeleton
-#from postprocessing.geometry.LineFit import LineFit
 from postprocessing.scoring.CandidateScoring import CandidateScoring
 from postprocessing.scoring.CandidateVisualizer import CandidateVisualizer
 
 from pipeline.DetectionPipeline import DetectionPipeline
 from config import ConfigManager
 
+import supervision as sv
 import cv2
 import logging
 
-# Setup logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
+# Annotators for fallback visualization
+box_annotator  = sv.BoxAnnotator()
+mask_annotator = sv.MaskAnnotator()
+label_annotator = sv.LabelAnnotator()
+
+
+def annotate_frame(frame, ctx):
+    """Draw boxes and masks directly from ctx when postprocessor is disabled."""
+    display = frame.copy()
+
+    if ctx.tracks is None:
+        return display
+
+    # When no detections, tracker returns empty list instead of tuple
+    if not isinstance(ctx.tracks, tuple) or len(ctx.tracks) != 2:
+        return display
+
+    _, sv_detections = ctx.tracks
+
+    if sv_detections is None or len(sv_detections) == 0:
+        return display
+
+    display = mask_annotator.annotate(display, sv_detections)
+    display = box_annotator.annotate(display, sv_detections)
+
+    if sv_detections.confidence is not None:
+        labels = [f"branch {c:.2f}" for c in sv_detections.confidence]
+        display = label_annotator.annotate(display, sv_detections, labels)
+
+    return display
+
 
 def main():
-    # Load configuration
     try:
         config = ConfigManager()
     except Exception as e:
@@ -39,7 +68,6 @@ def main():
 
     logger.info("Starting Detection Pipeline")
 
-    # Initialize source
     source_type = config.get("source.type", "mp4")
     if source_type == "mp4":
         source = MP4Source(config.get("source.video_path"))
@@ -50,39 +78,20 @@ def main():
     else:
         raise ValueError(f"Unsupported source type: {source_type}")
 
-    # Initialize detector
-    detector_type = config.get("detector.type", "yolo_seg")
+    detector_type       = config.get("detector.type", "yolo_seg")
     detector_model_path = config.get("detector.model_path")
-    detector_conf = config.get("detector.confidence_threshold")
+    detector_conf       = config.get("detector.confidence_threshold")
 
     if detector_type == "hailo_seg":
-        detector = HailoSegDetector(
-            hef_path=detector_model_path,
-            conf=detector_conf,
-        )
+        detector = HailoSegDetector(hef_path=detector_model_path, conf=detector_conf)
     elif detector_type == "yolo_seg":
-        detector = YOLOBranchSeg(
-            model_path=detector_model_path,
-            conf=detector_conf,
-        )
+        detector = YOLOBranchSeg(model_path=detector_model_path, conf=detector_conf)
     else:
         raise ValueError(f"Unsupported detector type: {detector_type}")
 
-    # Initialize tracker
     tracker = ByteTrack(detector)
-
-    # Initialize postprocessor stages (disabled for testing)
-    # postprocessor = PostProcessor([
-    #     MaskExtraction(),
-    #     DistanceHeatmap(),
-    #     BitmaskSkeleton(),
-    #     #LineFit(),
-    #     CandidateScoring(),
-    #     CandidateVisualizer(),
-    # ])
     postprocessor = None
 
-    # Create and run pipeline
     pipeline = DetectionPipeline(
         source=source,
         detector=detector,
@@ -90,7 +99,6 @@ def main():
         postprocessor=postprocessor
     )
 
-    # Process frames
     frame_count = 0
     visualization_enabled = config.get("visualization.enabled", True)
 
@@ -98,19 +106,18 @@ def main():
         for ctx in pipeline.run():
             frame_count += 1
 
-            # Display visualization if enabled
             if visualization_enabled:
-                # If no postprocessing visualization, show the frame with detections
                 if "branch_score_image" in ctx.debug:
                     display_image = ctx.debug["branch_score_image"]
                 else:
-                    display_image = ctx.frame
-                
+                    display_image = annotate_frame(ctx.frame, ctx)
+
                 cv2.imshow(
                     config.get("visualization.display_window_name", "Detection Pipeline"),
                     display_image
                 )
-                if cv2.waitKey(1) & 0xFF == ord('q'):
+                key = cv2.waitKey(1) & 0xFF
+                if key == ord('q'):
                     logger.info("User quit")
                     break
 
@@ -123,10 +130,8 @@ def main():
         logger.error(f"Pipeline error: {e}", exc_info=True)
     finally:
         source.release()
-        #source.stop_recording()  
-        cv2.destroyAllWindows()
+        cv2.destroyAllWindows()   # ← guaranteed to run even on exception
         logger.info(f"Pipeline complete. Processed {frame_count} frames total")
-
 
 
 if __name__ == "__main__":

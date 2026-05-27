@@ -36,3 +36,238 @@
 [2026-05-27 16:34:59.283] [16750] [HailoRT] [info] [core_op.cpp:156] [activate] Activating yolov8m_seg took 0.192815 milliseconds. Note that the function is asynchronous and thus the network is not fully activated yet.
 [2026-05-27 16:34:59.283] [16750] [HailoRT] [info] [core_op.cpp:156] [activate] Activating yolov8m_seg took 0.203889 milliseconds. Note that the function is asynchronous and thus the network is not fully activated yet.
 [2026-05-27 16:34:59.432] [16750] [HailoRT] [info] [async_infer_runner.cpp:86] [shutdown] Pipeline was aborted. Shutting it down
+[2026-05-27 16:46:47.637] [20208] [HailoRT] [info] [vdevice.cpp:535] [create] Creating vdevice with params: device_count: 1, scheduling_algorithm: NONE, multi_process_service: false
+[2026-05-27 16:46:47.650] [20208] [HailoRT] [info] [device.cpp:51] [Device] OS Version: Linux 6.18.29+rpt-rpi-2712 #1 SMP PREEMPT Debian 1:6.18.29-1+rpt1 (2026-05-12) aarch64
+[2026-05-27 16:46:47.650] [20208] [HailoRT] [info] [control.cpp:113] [control__parse_identify_results] firmware_version is: 4.23.0
+[2026-05-27 16:46:47.650] [20208] [HailoRT] [info] [vdevice.cpp:682] [create] VDevice Infos: 0001:01:00.0
+[2026-05-27 16:46:47.673] [20208] [HailoRT] [info] [hef.cpp:1994] [get_network_group_and_network_name] No name was given. Addressing all networks of default network_group: yolov8m_seg
+[2026-05-27 16:46:47.673] [20208] [HailoRT] [info] [hef.cpp:1994] [get_network_group_and_network_name] No name was given. Addressing all networks of default network_group: yolov8m_seg
+[2026-05-27 16:46:47.691] [20208] [HailoRT] [info] [internal_buffer_manager.cpp:77] [print_execution_results] Planned internal buffer memory: CMA=0 CMA-Desc=458752 Pinned=3459584. memory to edge layer usage factor is 1
+[2026-05-27 16:46:47.691] [20208] [HailoRT] [info] [internal_buffer_manager.cpp:86] [print_execution_results] Default Internal buffer planner executed successfully
+[2026-05-27 16:46:47.744] [20208] [HailoRT] [info] [device_internal.cpp:57] [configure] Configuring HEF took 70.370646 milliseconds
+[2026-05-27 16:46:47.744] [20208] [HailoRT] [info] [vdevice.cpp:780] [configure] Configuring HEF on VDevice took 70.917589 milliseconds
+[2026-05-27 16:46:47.744] [20208] [HailoRT] [info] [infer_model.cpp:417] [configure] Configuring network group 'yolov8m_seg' with params: batch size: 0, power mode: PERFORMANCE, latency: NONE
+[2026-05-27 16:46:47.744] [20208] [HailoRT] [info] [multi_io_elements.cpp:754] [create] Created (AsyncHwEl)
+[2026-05-27 16:46:47.744] [20208] [HailoRT] [info] [queue_elements.cpp:450] [create] Created (EntryPushQEl0yolov8m_seg/input_layer1 | timeout: 10s)
+[2026-05-27 16:46:47.744] [20208] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl9AsyncHwEl)
+[2026-05-27 16:46:47.744] [20208] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl8AsyncHwEl)
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl1AsyncHwEl)
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl3AsyncHwEl)
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl4AsyncHwEl)
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl2AsyncHwEl)
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl5AsyncHwEl)
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl6AsyncHwEl)
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl7AsyncHwEl)
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl0AsyncHwEl)
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] EntryPushQEl0yolov8m_seg/input_layer1 | inputs: user | outputs: AsyncHwEl(running in thread_id: 20328)
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] AsyncHwEl | inputs: EntryPushQEl0yolov8m_seg/input_layer1[0] | outputs: LastAsyncEl0AsyncHwEl LastAsyncEl1AsyncHwEl LastAsyncEl2AsyncHwEl LastAsyncEl3AsyncHwEl LastAsyncEl4AsyncHwEl LastAsyncEl5AsyncHwEl LastAsyncEl6AsyncHwEl LastAsyncEl7AsyncHwEl LastAsyncEl8AsyncHwEl LastAsyncEl9AsyncHwEl
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl0AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl1AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl2AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl3AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl4AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl5AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl6AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl7AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl8AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:46:47.745] [20208] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl9AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:46:47.746] [20208] [HailoRT] [info] [core_op.cpp:156] [activate] Activating yolov8m_seg took 0.2045 milliseconds. Note that the function is asynchronous and thus the network is not fully activated yet.
+[2026-05-27 16:46:47.746] [20208] [HailoRT] [info] [core_op.cpp:156] [activate] Activating yolov8m_seg took 0.223462 milliseconds. Note that the function is asynchronous and thus the network is not fully activated yet.
+[2026-05-27 16:46:50.092] [20208] [HailoRT] [info] [async_infer_runner.cpp:86] [shutdown] Pipeline was aborted. Shutting it down
+[2026-05-27 16:48:46.286] [20974] [HailoRT] [info] [vdevice.cpp:535] [create] Creating vdevice with params: device_count: 1, scheduling_algorithm: NONE, multi_process_service: false
+[2026-05-27 16:48:46.298] [20974] [HailoRT] [info] [device.cpp:51] [Device] OS Version: Linux 6.18.29+rpt-rpi-2712 #1 SMP PREEMPT Debian 1:6.18.29-1+rpt1 (2026-05-12) aarch64
+[2026-05-27 16:48:46.299] [20974] [HailoRT] [info] [control.cpp:113] [control__parse_identify_results] firmware_version is: 4.23.0
+[2026-05-27 16:48:46.299] [20974] [HailoRT] [info] [vdevice.cpp:682] [create] VDevice Infos: 0001:01:00.0
+[2026-05-27 16:48:46.429] [20974] [HailoRT] [info] [hef.cpp:1994] [get_network_group_and_network_name] No name was given. Addressing all networks of default network_group: yolov8m_seg
+[2026-05-27 16:48:46.429] [20974] [HailoRT] [info] [hef.cpp:1994] [get_network_group_and_network_name] No name was given. Addressing all networks of default network_group: yolov8m_seg
+[2026-05-27 16:48:46.438] [20974] [HailoRT] [info] [internal_buffer_manager.cpp:77] [print_execution_results] Planned internal buffer memory: CMA=0 CMA-Desc=458752 Pinned=3459584. memory to edge layer usage factor is 1
+[2026-05-27 16:48:46.438] [20974] [HailoRT] [info] [internal_buffer_manager.cpp:86] [print_execution_results] Default Internal buffer planner executed successfully
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [device_internal.cpp:57] [configure] Configuring HEF took 49.888754 milliseconds
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [vdevice.cpp:780] [configure] Configuring HEF on VDevice took 50.358049 milliseconds
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [infer_model.cpp:417] [configure] Configuring network group 'yolov8m_seg' with params: batch size: 0, power mode: PERFORMANCE, latency: NONE
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [multi_io_elements.cpp:754] [create] Created (AsyncHwEl)
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [queue_elements.cpp:450] [create] Created (EntryPushQEl0yolov8m_seg/input_layer1 | timeout: 10s)
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl9AsyncHwEl)
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl8AsyncHwEl)
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl1AsyncHwEl)
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl3AsyncHwEl)
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl4AsyncHwEl)
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl2AsyncHwEl)
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl5AsyncHwEl)
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl6AsyncHwEl)
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl7AsyncHwEl)
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl0AsyncHwEl)
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] EntryPushQEl0yolov8m_seg/input_layer1 | inputs: user | outputs: AsyncHwEl(running in thread_id: 21060)
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] AsyncHwEl | inputs: EntryPushQEl0yolov8m_seg/input_layer1[0] | outputs: LastAsyncEl0AsyncHwEl LastAsyncEl1AsyncHwEl LastAsyncEl2AsyncHwEl LastAsyncEl3AsyncHwEl LastAsyncEl4AsyncHwEl LastAsyncEl5AsyncHwEl LastAsyncEl6AsyncHwEl LastAsyncEl7AsyncHwEl LastAsyncEl8AsyncHwEl LastAsyncEl9AsyncHwEl
+[2026-05-27 16:48:46.480] [20974] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl0AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:48:46.481] [20974] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl1AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:48:46.482] [20974] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl2AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:48:46.482] [20974] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl3AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:48:46.482] [20974] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl4AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:48:46.482] [20974] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl5AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:48:46.482] [20974] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl6AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:48:46.482] [20974] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl7AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:48:46.482] [20974] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl8AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:48:46.482] [20974] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl9AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:48:46.482] [20974] [HailoRT] [info] [core_op.cpp:156] [activate] Activating yolov8m_seg took 0.222222 milliseconds. Note that the function is asynchronous and thus the network is not fully activated yet.
+[2026-05-27 16:48:46.482] [20974] [HailoRT] [info] [core_op.cpp:156] [activate] Activating yolov8m_seg took 0.242055 milliseconds. Note that the function is asynchronous and thus the network is not fully activated yet.
+[2026-05-27 16:48:46.760] [20974] [HailoRT] [info] [async_infer_runner.cpp:86] [shutdown] Pipeline was aborted. Shutting it down
+[2026-05-27 16:52:53.587] [22256] [HailoRT] [info] [vdevice.cpp:535] [create] Creating vdevice with params: device_count: 1, scheduling_algorithm: NONE, multi_process_service: false
+[2026-05-27 16:52:53.599] [22256] [HailoRT] [info] [device.cpp:51] [Device] OS Version: Linux 6.18.29+rpt-rpi-2712 #1 SMP PREEMPT Debian 1:6.18.29-1+rpt1 (2026-05-12) aarch64
+[2026-05-27 16:52:53.600] [22256] [HailoRT] [info] [control.cpp:113] [control__parse_identify_results] firmware_version is: 4.23.0
+[2026-05-27 16:52:53.600] [22256] [HailoRT] [info] [vdevice.cpp:682] [create] VDevice Infos: 0001:01:00.0
+[2026-05-27 16:52:54.110] [22256] [HailoRT] [info] [hef.cpp:1994] [get_network_group_and_network_name] No name was given. Addressing all networks of default network_group: yolov8m_seg
+[2026-05-27 16:52:54.110] [22256] [HailoRT] [info] [hef.cpp:1994] [get_network_group_and_network_name] No name was given. Addressing all networks of default network_group: yolov8m_seg
+[2026-05-27 16:52:54.119] [22256] [HailoRT] [info] [internal_buffer_manager.cpp:77] [print_execution_results] Planned internal buffer memory: CMA=0 CMA-Desc=458752 Pinned=3459584. memory to edge layer usage factor is 1
+[2026-05-27 16:52:54.119] [22256] [HailoRT] [info] [internal_buffer_manager.cpp:86] [print_execution_results] Default Internal buffer planner executed successfully
+[2026-05-27 16:52:54.160] [22256] [HailoRT] [info] [device_internal.cpp:57] [configure] Configuring HEF took 48.819251 milliseconds
+[2026-05-27 16:52:54.160] [22256] [HailoRT] [info] [vdevice.cpp:780] [configure] Configuring HEF on VDevice took 49.262619 milliseconds
+[2026-05-27 16:52:54.160] [22256] [HailoRT] [info] [infer_model.cpp:417] [configure] Configuring network group 'yolov8m_seg' with params: batch size: 0, power mode: PERFORMANCE, latency: NONE
+[2026-05-27 16:52:54.160] [22256] [HailoRT] [info] [multi_io_elements.cpp:754] [create] Created (AsyncHwEl)
+[2026-05-27 16:52:54.160] [22256] [HailoRT] [info] [queue_elements.cpp:450] [create] Created (EntryPushQEl0yolov8m_seg/input_layer1 | timeout: 10s)
+[2026-05-27 16:52:54.160] [22256] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl9AsyncHwEl)
+[2026-05-27 16:52:54.160] [22256] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl8AsyncHwEl)
+[2026-05-27 16:52:54.160] [22256] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl1AsyncHwEl)
+[2026-05-27 16:52:54.160] [22256] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl3AsyncHwEl)
+[2026-05-27 16:52:54.160] [22256] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl4AsyncHwEl)
+[2026-05-27 16:52:54.160] [22256] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl2AsyncHwEl)
+[2026-05-27 16:52:54.160] [22256] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl5AsyncHwEl)
+[2026-05-27 16:52:54.160] [22256] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl6AsyncHwEl)
+[2026-05-27 16:52:54.160] [22256] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl7AsyncHwEl)
+[2026-05-27 16:52:54.161] [22256] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl0AsyncHwEl)
+[2026-05-27 16:52:54.161] [22256] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] EntryPushQEl0yolov8m_seg/input_layer1 | inputs: user | outputs: AsyncHwEl(running in thread_id: 22360)
+[2026-05-27 16:52:54.161] [22256] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] AsyncHwEl | inputs: EntryPushQEl0yolov8m_seg/input_layer1[0] | outputs: LastAsyncEl0AsyncHwEl LastAsyncEl1AsyncHwEl LastAsyncEl2AsyncHwEl LastAsyncEl3AsyncHwEl LastAsyncEl4AsyncHwEl LastAsyncEl5AsyncHwEl LastAsyncEl6AsyncHwEl LastAsyncEl7AsyncHwEl LastAsyncEl8AsyncHwEl LastAsyncEl9AsyncHwEl
+[2026-05-27 16:52:54.161] [22256] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl0AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:52:54.161] [22256] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl1AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:52:54.161] [22256] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl2AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:52:54.161] [22256] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl3AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:52:54.161] [22256] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl4AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:52:54.161] [22256] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl5AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:52:54.161] [22256] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl6AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:52:54.161] [22256] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl7AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:52:54.161] [22256] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl8AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:52:54.161] [22256] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl9AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:52:54.161] [22256] [HailoRT] [info] [core_op.cpp:156] [activate] Activating yolov8m_seg took 0.182573 milliseconds. Note that the function is asynchronous and thus the network is not fully activated yet.
+[2026-05-27 16:52:54.161] [22256] [HailoRT] [info] [core_op.cpp:156] [activate] Activating yolov8m_seg took 0.192722 milliseconds. Note that the function is asynchronous and thus the network is not fully activated yet.
+[2026-05-27 16:55:10.337] [23126] [HailoRT] [info] [vdevice.cpp:535] [create] Creating vdevice with params: device_count: 1, scheduling_algorithm: NONE, multi_process_service: false
+[2026-05-27 16:55:10.337] [23126] [HailoRT] [info] [device.cpp:51] [Device] OS Version: Linux 6.18.29+rpt-rpi-2712 #1 SMP PREEMPT Debian 1:6.18.29-1+rpt1 (2026-05-12) aarch64
+[2026-05-27 16:55:10.338] [23126] [HailoRT] [info] [control.cpp:113] [control__parse_identify_results] firmware_version is: 4.23.0
+[2026-05-27 16:55:10.344] [23126] [HailoRT] [error] [vdevice.cpp:863] [create_devices] CHECK failed - Failed to create vdevice. there are not enough free devices. requested: 1, found: 0
+[2026-05-27 16:55:10.348] [23126] [HailoRT] [error] [vdevice.cpp:662] [create] CHECK_SUCCESS failed with status=HAILO_OUT_OF_PHYSICAL_DEVICES(74)
+[2026-05-27 16:55:10.348] [23126] [HailoRT] [error] [shared_resource_manager.hpp:81] [register_resource] CHECK_SUCCESS failed with status=HAILO_OUT_OF_PHYSICAL_DEVICES(74)
+[2026-05-27 16:55:10.348] [23126] [HailoRT] [error] [vdevice.cpp:133] [create] CHECK_SUCCESS failed with status=HAILO_OUT_OF_PHYSICAL_DEVICES(74)
+[2026-05-27 16:55:10.348] [23126] [HailoRT] [error] [vdevice.cpp:567] [create] CHECK_SUCCESS failed with status=HAILO_OUT_OF_PHYSICAL_DEVICES(74)
+[2026-05-27 16:57:06.993] [3273] [HailoRT] [info] [vdevice.cpp:535] [create] Creating vdevice with params: device_count: 1, scheduling_algorithm: NONE, multi_process_service: false
+[2026-05-27 16:57:07.015] [3273] [HailoRT] [info] [device.cpp:51] [Device] OS Version: Linux 6.18.29+rpt-rpi-2712 #1 SMP PREEMPT Debian 1:6.18.29-1+rpt1 (2026-05-12) aarch64
+[2026-05-27 16:57:07.017] [3273] [HailoRT] [info] [control.cpp:113] [control__parse_identify_results] firmware_version is: 4.23.0
+[2026-05-27 16:57:07.017] [3273] [HailoRT] [info] [vdevice.cpp:682] [create] VDevice Infos: 0001:01:00.0
+[2026-05-27 16:57:07.511] [3273] [HailoRT] [info] [hef.cpp:1994] [get_network_group_and_network_name] No name was given. Addressing all networks of default network_group: yolov8m_seg
+[2026-05-27 16:57:07.511] [3273] [HailoRT] [info] [hef.cpp:1994] [get_network_group_and_network_name] No name was given. Addressing all networks of default network_group: yolov8m_seg
+[2026-05-27 16:57:07.522] [3273] [HailoRT] [info] [internal_buffer_manager.cpp:77] [print_execution_results] Planned internal buffer memory: CMA=0 CMA-Desc=458752 Pinned=3459584. memory to edge layer usage factor is 1
+[2026-05-27 16:57:07.522] [3273] [HailoRT] [info] [internal_buffer_manager.cpp:86] [print_execution_results] Default Internal buffer planner executed successfully
+[2026-05-27 16:57:07.562] [3273] [HailoRT] [info] [device_internal.cpp:57] [configure] Configuring HEF took 49.577888 milliseconds
+[2026-05-27 16:57:07.562] [3273] [HailoRT] [info] [vdevice.cpp:780] [configure] Configuring HEF on VDevice took 50.375371 milliseconds
+[2026-05-27 16:57:07.562] [3273] [HailoRT] [info] [infer_model.cpp:417] [configure] Configuring network group 'yolov8m_seg' with params: batch size: 0, power mode: PERFORMANCE, latency: NONE
+[2026-05-27 16:57:07.564] [3273] [HailoRT] [info] [multi_io_elements.cpp:754] [create] Created (AsyncHwEl)
+[2026-05-27 16:57:07.565] [3273] [HailoRT] [info] [queue_elements.cpp:450] [create] Created (EntryPushQEl0yolov8m_seg/input_layer1 | timeout: 10s)
+[2026-05-27 16:57:07.565] [3273] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl9AsyncHwEl)
+[2026-05-27 16:57:07.565] [3273] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl8AsyncHwEl)
+[2026-05-27 16:57:07.565] [3273] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl1AsyncHwEl)
+[2026-05-27 16:57:07.565] [3273] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl3AsyncHwEl)
+[2026-05-27 16:57:07.566] [3273] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl4AsyncHwEl)
+[2026-05-27 16:57:07.566] [3273] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl2AsyncHwEl)
+[2026-05-27 16:57:07.566] [3273] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl5AsyncHwEl)
+[2026-05-27 16:57:07.566] [3273] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl6AsyncHwEl)
+[2026-05-27 16:57:07.566] [3273] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl7AsyncHwEl)
+[2026-05-27 16:57:07.566] [3273] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl0AsyncHwEl)
+[2026-05-27 16:57:07.566] [3273] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] EntryPushQEl0yolov8m_seg/input_layer1 | inputs: user | outputs: AsyncHwEl(running in thread_id: 3364)
+[2026-05-27 16:57:07.566] [3273] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] AsyncHwEl | inputs: EntryPushQEl0yolov8m_seg/input_layer1[0] | outputs: LastAsyncEl0AsyncHwEl LastAsyncEl1AsyncHwEl LastAsyncEl2AsyncHwEl LastAsyncEl3AsyncHwEl LastAsyncEl4AsyncHwEl LastAsyncEl5AsyncHwEl LastAsyncEl6AsyncHwEl LastAsyncEl7AsyncHwEl LastAsyncEl8AsyncHwEl LastAsyncEl9AsyncHwEl
+[2026-05-27 16:57:07.566] [3273] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl0AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:57:07.567] [3273] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl1AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:57:07.567] [3273] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl2AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:57:07.568] [3273] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl3AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:57:07.568] [3273] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl4AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:57:07.568] [3273] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl5AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:57:07.568] [3273] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl6AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:57:07.568] [3273] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl7AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:57:07.568] [3273] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl8AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:57:07.568] [3273] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl9AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:57:07.568] [3273] [HailoRT] [info] [core_op.cpp:156] [activate] Activating yolov8m_seg took 0.195759 milliseconds. Note that the function is asynchronous and thus the network is not fully activated yet.
+[2026-05-27 16:57:07.568] [3273] [HailoRT] [info] [core_op.cpp:156] [activate] Activating yolov8m_seg took 0.209928 milliseconds. Note that the function is asynchronous and thus the network is not fully activated yet.
+[2026-05-27 16:57:10.726] [3273] [HailoRT] [info] [async_infer_runner.cpp:86] [shutdown] Pipeline was aborted. Shutting it down
+[2026-05-27 16:59:22.553] [4168] [HailoRT] [info] [vdevice.cpp:535] [create] Creating vdevice with params: device_count: 1, scheduling_algorithm: NONE, multi_process_service: false
+[2026-05-27 16:59:22.565] [4168] [HailoRT] [info] [device.cpp:51] [Device] OS Version: Linux 6.18.29+rpt-rpi-2712 #1 SMP PREEMPT Debian 1:6.18.29-1+rpt1 (2026-05-12) aarch64
+[2026-05-27 16:59:22.566] [4168] [HailoRT] [info] [control.cpp:113] [control__parse_identify_results] firmware_version is: 4.23.0
+[2026-05-27 16:59:22.566] [4168] [HailoRT] [info] [vdevice.cpp:682] [create] VDevice Infos: 0001:01:00.0
+[2026-05-27 16:59:22.578] [4168] [HailoRT] [info] [hef.cpp:1994] [get_network_group_and_network_name] No name was given. Addressing all networks of default network_group: yolov8m_seg
+[2026-05-27 16:59:22.578] [4168] [HailoRT] [info] [hef.cpp:1994] [get_network_group_and_network_name] No name was given. Addressing all networks of default network_group: yolov8m_seg
+[2026-05-27 16:59:22.586] [4168] [HailoRT] [info] [internal_buffer_manager.cpp:77] [print_execution_results] Planned internal buffer memory: CMA=0 CMA-Desc=458752 Pinned=3459584. memory to edge layer usage factor is 1
+[2026-05-27 16:59:22.586] [4168] [HailoRT] [info] [internal_buffer_manager.cpp:86] [print_execution_results] Default Internal buffer planner executed successfully
+[2026-05-27 16:59:22.633] [4168] [HailoRT] [info] [device_internal.cpp:57] [configure] Configuring HEF took 54.495926 milliseconds
+[2026-05-27 16:59:22.633] [4168] [HailoRT] [info] [vdevice.cpp:780] [configure] Configuring HEF on VDevice took 54.947977 milliseconds
+[2026-05-27 16:59:22.633] [4168] [HailoRT] [info] [infer_model.cpp:417] [configure] Configuring network group 'yolov8m_seg' with params: batch size: 0, power mode: PERFORMANCE, latency: NONE
+[2026-05-27 16:59:22.633] [4168] [HailoRT] [info] [multi_io_elements.cpp:754] [create] Created (AsyncHwEl)
+[2026-05-27 16:59:22.633] [4168] [HailoRT] [info] [queue_elements.cpp:450] [create] Created (EntryPushQEl0yolov8m_seg/input_layer1 | timeout: 10s)
+[2026-05-27 16:59:22.633] [4168] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl9AsyncHwEl)
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl8AsyncHwEl)
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl1AsyncHwEl)
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl3AsyncHwEl)
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl4AsyncHwEl)
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl2AsyncHwEl)
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl5AsyncHwEl)
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl6AsyncHwEl)
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl7AsyncHwEl)
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl0AsyncHwEl)
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] EntryPushQEl0yolov8m_seg/input_layer1 | inputs: user | outputs: AsyncHwEl(running in thread_id: 4263)
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] AsyncHwEl | inputs: EntryPushQEl0yolov8m_seg/input_layer1[0] | outputs: LastAsyncEl0AsyncHwEl LastAsyncEl1AsyncHwEl LastAsyncEl2AsyncHwEl LastAsyncEl3AsyncHwEl LastAsyncEl4AsyncHwEl LastAsyncEl5AsyncHwEl LastAsyncEl6AsyncHwEl LastAsyncEl7AsyncHwEl LastAsyncEl8AsyncHwEl LastAsyncEl9AsyncHwEl
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl0AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl1AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl2AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl3AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl4AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl5AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl6AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl7AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl8AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl9AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [core_op.cpp:156] [activate] Activating yolov8m_seg took 0.193607 milliseconds. Note that the function is asynchronous and thus the network is not fully activated yet.
+[2026-05-27 16:59:22.634] [4168] [HailoRT] [info] [core_op.cpp:156] [activate] Activating yolov8m_seg took 0.206996 milliseconds. Note that the function is asynchronous and thus the network is not fully activated yet.
+[2026-05-27 17:00:23.646] [4168] [HailoRT] [info] [async_infer_runner.cpp:86] [shutdown] Pipeline was aborted. Shutting it down
+[2026-05-27 17:02:47.887] [5536] [HailoRT] [info] [vdevice.cpp:535] [create] Creating vdevice with params: device_count: 1, scheduling_algorithm: NONE, multi_process_service: false
+[2026-05-27 17:02:47.897] [5536] [HailoRT] [info] [device.cpp:51] [Device] OS Version: Linux 6.18.29+rpt-rpi-2712 #1 SMP PREEMPT Debian 1:6.18.29-1+rpt1 (2026-05-12) aarch64
+[2026-05-27 17:02:47.898] [5536] [HailoRT] [info] [control.cpp:113] [control__parse_identify_results] firmware_version is: 4.23.0
+[2026-05-27 17:02:47.898] [5536] [HailoRT] [info] [vdevice.cpp:682] [create] VDevice Infos: 0001:01:00.0
+[2026-05-27 17:02:47.910] [5536] [HailoRT] [info] [hef.cpp:1994] [get_network_group_and_network_name] No name was given. Addressing all networks of default network_group: yolov8m_seg
+[2026-05-27 17:02:47.910] [5536] [HailoRT] [info] [hef.cpp:1994] [get_network_group_and_network_name] No name was given. Addressing all networks of default network_group: yolov8m_seg
+[2026-05-27 17:02:47.918] [5536] [HailoRT] [info] [internal_buffer_manager.cpp:77] [print_execution_results] Planned internal buffer memory: CMA=0 CMA-Desc=458752 Pinned=3459584. memory to edge layer usage factor is 1
+[2026-05-27 17:02:47.918] [5536] [HailoRT] [info] [internal_buffer_manager.cpp:86] [print_execution_results] Default Internal buffer planner executed successfully
+[2026-05-27 17:02:47.961] [5536] [HailoRT] [info] [device_internal.cpp:57] [configure] Configuring HEF took 50.525849 milliseconds
+[2026-05-27 17:02:47.961] [5536] [HailoRT] [info] [vdevice.cpp:780] [configure] Configuring HEF on VDevice took 50.990451 milliseconds
+[2026-05-27 17:02:47.961] [5536] [HailoRT] [info] [infer_model.cpp:417] [configure] Configuring network group 'yolov8m_seg' with params: batch size: 0, power mode: PERFORMANCE, latency: NONE
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [multi_io_elements.cpp:754] [create] Created (AsyncHwEl)
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [queue_elements.cpp:450] [create] Created (EntryPushQEl0yolov8m_seg/input_layer1 | timeout: 10s)
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl9AsyncHwEl)
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl8AsyncHwEl)
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl1AsyncHwEl)
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl3AsyncHwEl)
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl4AsyncHwEl)
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl2AsyncHwEl)
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl5AsyncHwEl)
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl6AsyncHwEl)
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl7AsyncHwEl)
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [edge_elements.cpp:187] [create] Created (LastAsyncEl0AsyncHwEl)
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] EntryPushQEl0yolov8m_seg/input_layer1 | inputs: user | outputs: AsyncHwEl(running in thread_id: 5638)
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] AsyncHwEl | inputs: EntryPushQEl0yolov8m_seg/input_layer1[0] | outputs: LastAsyncEl0AsyncHwEl LastAsyncEl1AsyncHwEl LastAsyncEl2AsyncHwEl LastAsyncEl3AsyncHwEl LastAsyncEl4AsyncHwEl LastAsyncEl5AsyncHwEl LastAsyncEl6AsyncHwEl LastAsyncEl7AsyncHwEl LastAsyncEl8AsyncHwEl LastAsyncEl9AsyncHwEl
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl0AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl1AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl2AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl3AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl4AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl5AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl6AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl7AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl8AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [pipeline.cpp:891] [print_deep_description] LastAsyncEl9AsyncHwEl | inputs: AsyncHwEl[0] | outputs: user
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [core_op.cpp:156] [activate] Activating yolov8m_seg took 0.192967 milliseconds. Note that the function is asynchronous and thus the network is not fully activated yet.
+[2026-05-27 17:02:47.962] [5536] [HailoRT] [info] [core_op.cpp:156] [activate] Activating yolov8m_seg took 0.206486 milliseconds. Note that the function is asynchronous and thus the network is not fully activated yet.
+[2026-05-27 17:03:54.194] [5536] [HailoRT] [info] [async_infer_runner.cpp:86] [shutdown] Pipeline was aborted. Shutting it down

@@ -4,7 +4,7 @@ from hailo_platform import VDevice
 from detectors.Detector import Detector
 
 HEF_PATH    = "model/yolov8_segmentation.hef"
-CONF_THRESH = 0.6
+CONF_THRESH = 0.8
 INPUT_SIZE  = 640
 
 
@@ -43,11 +43,7 @@ class HailoSegDetector(Detector):
             self._bindings.output(name).set_buffer(buf)
 
     def predict(self, frame):
-        """
-        frame: BGR numpy array (any resolution)
-        returns: None, bboxes [N,4], masks [N,H,W] binary, confidences [N], class_ids [N]
-        Masks are already resized to frame resolution.
-        """
+
         orig_h, orig_w = frame.shape[:2]
         rgb     = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         resized = cv2.resize(rgb, (self._w, self._h))
@@ -68,18 +64,26 @@ class HailoSegDetector(Detector):
         class_ids   = np.zeros(len(dets), dtype=np.int32)
 
         # Build per-detection binary masks at frame resolution
+        # Build per-detection binary masks at frame resolution
         masks = None
         if proto is not None:
             masks = []
-            for det in dets:
+            for i, det in enumerate(dets):
+                x1, y1, x2, y2 = int(dets[i][0]), int(dets[i][1]), int(dets[i][2]), int(dets[i][3])
                 coeffs = det[5]
                 if coeffs is not None:
-                    m      = _sigmoid(np.einsum('c,chw->hw', coeffs, proto))
-                    m      = cv2.resize(m, (orig_w, orig_h))
-                    masks.append((m > 0.5).astype(np.uint8))
+                    m = _sigmoid(np.einsum('c,chw->hw', coeffs, proto))
+                    m = cv2.resize(m, (orig_w, orig_h))
+                    binary = (m > 0.5).astype(np.uint8)
+
+                    # Clip mask to bounding box — prevents full-frame bleed
+                    clipped = np.zeros_like(binary)
+                    clipped[y1:y2, x1:x2] = binary[y1:y2, x1:x2]
+
+                    masks.append(clipped)
                 else:
                     masks.append(np.zeros((orig_h, orig_w), dtype=np.uint8))
-            masks = np.array(masks)   # [N, orig_h, orig_w]
+            masks = np.array(masks, dtype=bool)  # [N, orig_h, orig_w]
 
         return None, bboxes, masks, confidences, class_ids
 
