@@ -27,25 +27,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Annotators for fallback visualization
-box_annotator  = sv.BoxAnnotator()
-mask_annotator = sv.MaskAnnotator()
+box_annotator   = sv.BoxAnnotator()
+mask_annotator  = sv.MaskAnnotator()
 label_annotator = sv.LabelAnnotator()
 
 
 def annotate_frame(frame, ctx):
-    """Draw boxes and masks directly from ctx when postprocessor is disabled."""
+    """Draw boxes and masks using ctx.sv_detections when postprocessor is disabled."""
     display = frame.copy()
 
-    if ctx.tracks is None:
-        return display
-
-    # When no detections, tracker returns empty list instead of tuple
-    if not isinstance(ctx.tracks, tuple) or len(ctx.tracks) != 2:
-        return display
-
-    _, sv_detections = ctx.tracks
-
+    sv_detections = getattr(ctx, 'sv_detections', None)
     if sv_detections is None or len(sv_detections) == 0:
         return display
 
@@ -90,7 +81,15 @@ def main():
         raise ValueError(f"Unsupported detector type: {detector_type}")
 
     tracker = ByteTrack(detector)
-    postprocessor = None
+
+    postprocessor = PostProcessor([
+        MaskExtraction(),
+        DistanceHeatmap(),
+        BitmaskSkeleton(),
+        CandidateScoring(),
+        CandidateVisualizer(),
+    ])
+    # postprocessor = None
 
     pipeline = DetectionPipeline(
         source=source,
@@ -130,7 +129,7 @@ def main():
         logger.error(f"Pipeline error: {e}", exc_info=True)
     finally:
         source.release()
-        cv2.destroyAllWindows()   # ← guaranteed to run even on exception
+        cv2.destroyAllWindows()
         logger.info(f"Pipeline complete. Processed {frame_count} frames total")
 
 

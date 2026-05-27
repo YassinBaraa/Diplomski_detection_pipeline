@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 import numpy as np
 
+
 @dataclass
 class PipelineContext:
     frame: np.ndarray
@@ -11,6 +12,7 @@ class PipelineContext:
     confidences: Any = None
     class_ids: Any = None
     tracks: Any = None
+    sv_detections: Any = None  # supervision Detections for visualization
     masks: Any = None
     binary_mask: Optional[np.ndarray] = None
     distance_heatmap: Optional[np.ndarray] = None

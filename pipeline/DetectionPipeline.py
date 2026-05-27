@@ -1,7 +1,9 @@
 from pipeline.PipelineContext import PipelineContext
+import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class DetectionPipeline:
     def __init__(self, source, detector, tracker, postprocessor=None):
@@ -27,6 +29,7 @@ class DetectionPipeline:
                 break
 
             ctx = PipelineContext(frame=frame, source_metadata=source_metadata)
+
             try:
                 prediction = self.detector.predict(frame)
                 if isinstance(prediction, tuple):
@@ -44,7 +47,7 @@ class DetectionPipeline:
                     ctx.confidences = None
                     ctx.class_ids = None
 
-                ctx.tracks = self.tracker.track(
+                track_result = self.tracker.track(
                     frame,
                     results=ctx.results,
                     bboxes=ctx.detections,
@@ -52,8 +55,22 @@ class DetectionPipeline:
                     confidences=ctx.confidences,
                     class_ids=ctx.class_ids,
                 )
+
+                # ByteTrack returns (tracks_list, sv.Detections)
+                # tracks_list is used by postprocessing, sv_detections for visualization
+                if (
+                    isinstance(track_result, tuple)
+                    and len(track_result) == 2
+                    and isinstance(track_result[0], list)
+                ):
+                    ctx.tracks, ctx.sv_detections = track_result
+                else:
+                    ctx.tracks = track_result
+                    ctx.sv_detections = None
+
                 if self.postprocessor is not None:
                     ctx = self.postprocessor.process(ctx)
+
             except Exception as e:
                 logger.error(f"Pipeline error processing frame: {e}", exc_info=True)
                 ctx.candidates = []
