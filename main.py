@@ -1,8 +1,8 @@
-from sources.CameraSource import CameraSource
+#from sources.CameraSource import CameraSource
 from sources.MP4Source import MP4Source
-from sources.NiclaSource import NiclaSource
+#from sources.NiclaSource import NiclaSource
 
-from detectors.HailoSegDetector import HailoSegDetector
+#from detectors.HailoSegDetector import HailoSegDetector
 from detectors.YOLOBranchSeg import YOLOBranchSeg
 
 from trackers.ByteTrack import ByteTrack
@@ -33,7 +33,6 @@ label_annotator = sv.LabelAnnotator()
 
 
 def annotate_frame(frame, ctx):
-    """Draw boxes and masks using ctx.sv_detections when postprocessor is disabled."""
     display = frame.copy()
 
     sv_detections = getattr(ctx, 'sv_detections', None)
@@ -51,45 +50,73 @@ def annotate_frame(frame, ctx):
 
 
 def main():
+    
+    # config_dict = {
+    #     "source": {"type": "mp4", "video_path": "sources/example.mp4"},
+    #     "detector": {"type": "yolo_seg", "model_path": "model/best_small.pt", "confidence_threshold": 0.5},
+    #     "visualization": {"enabled": True, "display_window_name": "Detection Pipeline"},
+    #     "postprocessing_enabled": False,
+    # }
+    
     try:
         config = ConfigManager()
+        config_dict = {
+            "source": {"type": "mp4", "video_path": "sources/example.mp4"},
+            "detector": {"type": "yolo_seg", "model_path": "model/best_small.pt", "confidence_threshold": 0.5},
+            "visualization": {"enabled": True, "display_window_name": "Detection Pipeline"},
+            "postprocessing_enabled": True,
+        }
     except Exception as e:
         logger.error(f"Failed to load configuration: {e}")
         return
-
+    
     logger.info("Starting Detection Pipeline")
-
-    source_type = config.get("source.type", "mp4")
+    
+    # Initialize source
+    source_type = config_dict["source"]["type"]
     if source_type == "mp4":
-        source = MP4Source(config.get("source.video_path"))
+        source = MP4Source(config_dict["source"]["video_path"])
+        logger.info(f" MP4Source initialized: {config_dict['source']['video_path']}")
     elif source_type == "camera":
         source = CameraSource()
+        logger.info(" CameraSource initialized")
     elif source_type == "nicla":
         source = NiclaSource()
+        logger.info(" NiclaSource initialized")
     else:
         raise ValueError(f"Unsupported source type: {source_type}")
-
-    detector_type       = config.get("detector.type", "yolo_seg")
-    detector_model_path = config.get("detector.model_path")
-    detector_conf       = config.get("detector.confidence_threshold")
-
-    if detector_type == "hailo_seg":
-        detector = HailoSegDetector(hef_path=detector_model_path, conf=detector_conf)
-    elif detector_type == "yolo_seg":
+    
+    # Initialize detector
+    detector_type = config_dict["detector"]["type"]
+    detector_model_path = config_dict["detector"].get("model_path", "model/best.pt")
+    detector_conf = config_dict["detector"].get("confidence_threshold", 0.5)
+    
+    if detector_type == "yolo_seg":
         detector = YOLOBranchSeg(model_path=detector_model_path, conf=detector_conf)
+        logger.info(f" YOLOBranchSeg initialized: {detector_model_path} (conf={detector_conf})")
+    elif detector_type == "hailo_seg":
+        detector = HailoSegDetector(hef_path=detector_model_path, conf=detector_conf)
+        logger.info(f" HailoSegDetector initialized: {detector_model_path} (conf={detector_conf})")
     else:
         raise ValueError(f"Unsupported detector type: {detector_type}")
-
+    
+    # Initialize tracker
     tracker = ByteTrack(detector)
-
-    postprocessor = PostProcessor([
-        MaskExtraction(),
-        DistanceHeatmap(),
-        BitmaskSkeleton(),
-        CandidateScoring(),
-        CandidateVisualizer(),
-    ])
-    # postprocessor = None
+    logger.info(" ByteTrack initialized")
+    
+    # Initialize postprocessor (optional)
+    if config_dict.get("postprocessing_enabled", True):
+        postprocessor = PostProcessor([
+            MaskExtraction(), # makes bitmask from segmentation output
+            DistanceHeatmap(), # calculates bitmask from segmentation mask
+            BitmaskSkeleton(), # calculates skeleton from bitmask
+            CandidateScoring(), # scoring candidates based on postprocess and weight function
+            CandidateVisualizer(),
+        ])
+        logger.info(" PostProcessor initialized with full pipeline")
+    else:
+        postprocessor = None
+        logger.info("⊘ PostProcessor disabled - raw detections only")
 
     pipeline = DetectionPipeline(
         source=source,

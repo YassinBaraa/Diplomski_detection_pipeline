@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 class CandidateVisualizer(Stage):
     def run(self, ctx):
+        
         if ctx.frame is None:
             return ctx
 
@@ -65,6 +66,7 @@ class CandidateVisualizer(Stage):
             # Draw best candidate
             if ctx.best_candidate:
                 try:
+                    
                     x = int(ctx.best_candidate["x"] * scale_x)
                     y = int(ctx.best_candidate["y"] * scale_y)
                     x = max(0, min(x, vis_w - 1))
