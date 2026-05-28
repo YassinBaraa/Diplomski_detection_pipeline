@@ -52,13 +52,6 @@ def annotate_frame(frame, ctx):
 
 def main():
     
-    # config_dict = {
-    #     "source": {"type": "mp4", "video_path": "sources/example.mp4"},
-    #     "detector": {"type": "yolo_seg", "model_path": "model/best_small.pt", "confidence_threshold": 0.5},
-    #     "visualization": {"enabled": True, "display_window_name": "Detection Pipeline"},
-    #     "postprocessing_enabled": False,
-    # }
-    
     try:
         config = ConfigManager()
         config_dict = {
@@ -67,6 +60,13 @@ def main():
             "visualization": {"enabled": True, "display_window_name": "Detection Pipeline"},
             "postprocessing_enabled": True,
         }
+        # config_dict = {
+        #     "source": {"type": "nicla"},
+        #     "detector": {"type": "hailo_seg", "model_path": "model/yolov8_segmentation.hef", "confidence_threshold": 0.7},
+        #     "visualization": {"enabled": True, "display_window_name": "Detection Pipeline"},
+        #     "postprocessing_enabled": True,
+        # }
+
     except Exception as e:
         logger.error(f"Failed to load configuration: {e}")
         return
