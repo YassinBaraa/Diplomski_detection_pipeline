@@ -20,4 +20,5 @@ class PipelineContext:
     lines: Any = None
     candidates: Any = None
     best_candidate: Any = None
+    final_point: Any = None  # Most reoccurring point from 20-second warmup
     debug: dict = field(default_factory=dict)

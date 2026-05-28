@@ -1,12 +1,15 @@
 import numpy as np
+import logging
 from pipeline.Stage import Stage
 
+logger = logging.getLogger(__name__)
 
-# Constraints (hard filters)
-ASPECT_RATIO_MIN = 1.2  # x = 1.3*y 
-ASPECT_RATIO_MAX = 1.4
-BBOX_SIZE_MIN = 0.15    # 15% of frame
-BBOX_SIZE_MAX = 0.40    # 40% of frame
+
+# Constraints (hard filters) - disabled to allow all tracks through
+ASPECT_RATIO_MIN = 0.0  # Allow any aspect ratio
+ASPECT_RATIO_MAX = 10.0
+BBOX_SIZE_MIN = 0.0     # Allow any size
+BBOX_SIZE_MAX = 1.0
 
 # Weights for scoring variables (easy to adjust)
 WEIGHTS = {
@@ -35,6 +38,11 @@ class CandidateScoring(Stage):
         if ctx.tracks is None or len(ctx.tracks) == 0:
             ctx.candidates = []
             ctx.best_candidate = None
+            ctx.debug["num_tracks"] = 0
+            ctx.debug["num_candidates"] = 0
+            ctx.debug["skipped_no_skeleton"] = 0
+            ctx.debug["skipped_boundary"] = 0
+            logger.debug(f"No tracks available. Skeleton: {ctx.skeleton is not None}, Skeleton empty: {ctx.skeleton is not None and np.sum(ctx.skeleton) == 0}")
             return ctx
 
         frame_h, frame_w = ctx.frame.shape[:2]
@@ -43,6 +51,10 @@ class CandidateScoring(Stage):
 
         all_candidates = []
         best_per_track = []
+        skipped_skeleton = 0
+        skipped_boundary = 0
+        
+        ctx.debug["num_tracks"] = len(ctx.tracks)
 
         for xyxy, mask_i, confidence, class_id, tracker_id, data in ctx.tracks:
             if tracker_id is None:
@@ -118,6 +130,7 @@ class CandidateScoring(Stage):
                 "center_distance": float(norm_center_distance),
                 "bbox_size": float(norm_bbox_size),
                 "bbox": (int(x1), int(y1), int(x2), int(y2)),
+                "distance_to_boundary": float(dist_to_center),
             }
 
             all_candidates.append(candidate)
@@ -130,5 +143,11 @@ class CandidateScoring(Stage):
             else None
         )
         ctx.candidates = best_per_track
+        
+        # Set debug counters
+        ctx.debug["num_candidates"] = len(all_candidates)
+        ctx.debug["num_confirmed_tracks"] = len(best_per_track)
+        ctx.debug["skipped_no_skeleton"] = skipped_skeleton
+        ctx.debug["skipped_boundary"] = skipped_boundary
 
         return ctx

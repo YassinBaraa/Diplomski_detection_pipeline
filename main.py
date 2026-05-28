@@ -12,6 +12,7 @@ from postprocessing.masks.MaskExtraction import MaskExtraction
 from postprocessing.geometry.DistanceHeatmap import DistanceHeatmap
 from postprocessing.geometry.BitmaskSkeleton import BitmaskSkeleton
 from postprocessing.scoring.CandidateScoring import CandidateScoring
+from postprocessing.scoring.WarmupFinalPoint import WarmupFinalPoint
 from postprocessing.scoring.CandidateVisualizer import CandidateVisualizer
 
 from pipeline.DetectionPipeline import DetectionPipeline
@@ -62,7 +63,7 @@ def main():
         config = ConfigManager()
         config_dict = {
             "source": {"type": "mp4", "video_path": "sources/example.mp4"},
-            "detector": {"type": "yolo_seg", "model_path": "model/best_small.pt", "confidence_threshold": 0.5},
+            "detector": {"type": "yolo_seg", "model_path": "model/best_small.pt", "confidence_threshold": 0.7},
             "visualization": {"enabled": True, "display_window_name": "Detection Pipeline"},
             "postprocessing_enabled": True,
         }
@@ -111,6 +112,7 @@ def main():
             DistanceHeatmap(), # calculates bitmask from segmentation mask
             BitmaskSkeleton(), # calculates skeleton from bitmask
             CandidateScoring(), # scoring candidates based on postprocess and weight function
+            WarmupFinalPoint(), # collect best candidates for 20s to find most reoccurring point
             CandidateVisualizer(),
         ])
         logger.info(" PostProcessor initialized with full pipeline")
