@@ -18,18 +18,8 @@ WEIGHTS = {
     "bbox_size": 0.25,       # Size in target range is better
 }
 
-# normalization
-USE_SIGMOID = True
-
-
 def sigmoid(x):
     return 1.0 / (1.0 + np.exp(-np.clip(x, -10, 10)))
-
-
-def normalize_value(value, min_val, max_val):
-    if min_val == max_val:
-        return 0.5
-    return np.clip((value - min_val) / (max_val - min_val), 0, 1)
 
 
 class CandidateScoring(Stage):
@@ -50,7 +40,6 @@ class CandidateScoring(Stage):
         frame_diag = np.sqrt(frame_w**2 + frame_h**2)
 
         all_candidates = []
-        best_per_track = []
         skipped_skeleton = 0
         skipped_boundary = 0
         
@@ -114,11 +103,7 @@ class CandidateScoring(Stage):
                 + WEIGHTS["bbox_size"] * norm_bbox_size
             )
 
-            # Apply sigmoid for smooth normalization
-            if USE_SIGMOID:
-                final_score = sigmoid(score * 2.0)  # Scale for sigmoid
-            else:
-                final_score = np.clip(score, 0, 1)
+            final_score = sigmoid(score * 2.0)
 
             # store candidate
             candidate = {
@@ -134,7 +119,6 @@ class CandidateScoring(Stage):
             }
 
             all_candidates.append(candidate)
-            best_per_track.append(candidate)
 
         # Find best candidate overall
         ctx.best_candidate = (
@@ -142,11 +126,11 @@ class CandidateScoring(Stage):
             if all_candidates
             else None
         )
-        ctx.candidates = best_per_track
-        
+        ctx.candidates = all_candidates
+
         # Set debug counters
         ctx.debug["num_candidates"] = len(all_candidates)
-        ctx.debug["num_confirmed_tracks"] = len(best_per_track)
+        ctx.debug["num_confirmed_tracks"] = len(all_candidates)
         ctx.debug["skipped_no_skeleton"] = skipped_skeleton
         ctx.debug["skipped_boundary"] = skipped_boundary
 

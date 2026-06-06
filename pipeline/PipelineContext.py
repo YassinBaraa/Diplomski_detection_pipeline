@@ -20,5 +20,6 @@ class PipelineContext:
     lines: Any = None
     candidates: Any = None
     best_candidate: Any = None
-    final_point: Any = None  # Most reoccurring point from 20-second warmup
+    final_point: Any = None          # Most reoccurring point from 20-second warmup
+    reference_frame: Any = None      # Frame snapshot taken when final_point was locked
     debug: dict = field(default_factory=dict)

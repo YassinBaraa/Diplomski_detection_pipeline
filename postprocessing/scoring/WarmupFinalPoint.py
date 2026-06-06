@@ -14,6 +14,8 @@ class WarmupFinalPoint(Stage):
         self.start_time = None
         self.warmup_complete = False
         self.candidate_history = []  # List of (x, y) tuples
+        self._final_point = None     # Persists across frames after warmup
+        self._reference_frame = None # Frame snapshot when final_point was locked
     
     def run(self, ctx):
         # Initialize start time on first frame
@@ -57,20 +59,20 @@ class WarmupFinalPoint(Stage):
                 center_x = int(np.mean(best_cluster_points[:, 0]))
                 center_y = int(np.mean(best_cluster_points[:, 1]))
                 
-                ctx.final_point = {
+                self._final_point = {
                     "x": center_x,
                     "y": center_y,
                     "occurrences": int(np.max(counts)),
                     "total_observations": len(self.candidate_history),
                 }
+                self._reference_frame = ctx.frame.copy()
 
-            else:
-                ctx.final_point = None
-            
             ctx.debug["warmup_progress"] = "Complete"
-        
-        # After warmup, keep final_point set
-        if self.warmup_complete and ctx.final_point is not None:
+
+        # Re-apply persisted final_point every frame after warmup
+        if self.warmup_complete:
+            ctx.final_point = self._final_point
+            ctx.reference_frame = self._reference_frame
             ctx.debug["warmup_progress"] = "Complete"
         
         return ctx

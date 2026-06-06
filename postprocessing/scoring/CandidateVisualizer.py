@@ -23,6 +23,13 @@ class CandidateVisualizer(Stage):
             scale_x = vis_w / frame_w if frame_w > 0 else 1.0
             scale_y = vis_h / frame_h if frame_h > 0 else 1.0
 
+            # Draw binary mask as semi-transparent green overlay
+            if ctx.binary_mask is not None:
+                mask_display = cv2.resize(ctx.binary_mask, (vis_w, vis_h), interpolation=cv2.INTER_NEAREST)
+                green_overlay = np.zeros_like(vis)
+                green_overlay[mask_display > 0] = [0, 180, 0]
+                vis = cv2.addWeighted(vis, 1.0, green_overlay, 0.35, 0)
+
             # Validate that skeleton matches frame dimensions
             display_skeleton = ctx.skeleton
             if ctx.skeleton is not None:
@@ -54,11 +61,8 @@ class CandidateVisualizer(Stage):
                         y = max(0, min(y, vis_h - 1))
 
                         score = cand["score"]
-                        confirmed = cand.get("confirmed", False)
-                        color = (0, 255, 0) if confirmed else (255, 0, 0)
-
-                        cv2.circle(vis, (x, y), 5, color, 2)
-                        cv2.putText(vis, f"{score:.1f}", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
+                        cv2.circle(vis, (x, y), 5, (255, 0, 0), 2)
+                        cv2.putText(vis, f"{score:.1f}", (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 0, 0), 1)
                     except KeyError as e:
                         logger.warning(f"Candidate missing field: {e}")
                     except (ValueError, TypeError) as e:
@@ -74,14 +78,11 @@ class CandidateVisualizer(Stage):
                     y = max(0, min(y, vis_h - 1))
 
                     r = max(1, int(ctx.best_candidate.get("distance_to_boundary", 5) * scale_x))
-                    is_stable = ctx.best_candidate.get("is_stable", False)
-                    color = (0, 255, 0) if is_stable else (0, 0, 255)  # Green if stable, red if unstable
-                    cv2.circle(vis, (x, y), 8, color, 3)
+                    cv2.circle(vis, (x, y), 8, (0, 0, 255), 3)
                     cv2.circle(vis, (x, y), r, (0, 255, 255), 2)
 
-                    stability_text = "STABLE" if is_stable else "UNSTABLE"
-                    text = f"Best: {ctx.best_candidate['score']:.2f} [{stability_text}]"
-                    cv2.putText(vis, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+                    text = f"Best: {ctx.best_candidate['score']:.2f}"
+                    cv2.putText(vis, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
                 except KeyError as e:
                     logger.warning(f"Best candidate missing field: {e}")
                 except (ValueError, TypeError) as e:
@@ -121,9 +122,6 @@ class CandidateVisualizer(Stage):
                 cv2.putText(vis, f"Skipped (boundary): {skipped_boundary}", (10, y_pos + 80), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (100, 100, 200), 1)
                 if warmup_prog:
                     cv2.putText(vis, f"Warmup: {warmup_prog}", (10, y_pos + 100), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (150, 150, 100), 1)
-                else:
-                    stability_progress = ctx.debug.get('stability_buffer_progress', 0)
-                    cv2.putText(vis, f"(Buffering {stability_progress}/5 frames for stability)", (10, y_pos + 100), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (150, 150, 100), 1)
             except (ValueError, TypeError) as e:
                 logger.warning(f"Error drawing statistics: {e}")
 

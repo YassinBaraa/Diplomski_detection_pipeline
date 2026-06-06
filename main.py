@@ -118,7 +118,7 @@ def main():
         logger.info(" PostProcessor initialized with full pipeline")
     else:
         postprocessor = None
-        logger.info("⊘ PostProcessor disabled - raw detections only")
+        logger.info(" PostProcessor disabled - raw detections only")
 
     pipeline = DetectionPipeline(
         source=source,
@@ -149,6 +149,16 @@ def main():
                     logger.info("User quit")
                     break
 
+            yield {
+                "frame": ctx.frame,
+                "final_point": ctx.final_point,
+                "best_candidate": ctx.best_candidate,
+                "reference_frame": ctx.reference_frame,
+                "distance_mm": (ctx.source_metadata or {}).get("distance_mm"),
+                "frame_w": ctx.frame.shape[1],
+                "frame_h": ctx.frame.shape[0],
+            }
+
             if frame_count % 30 == 0:
                 logger.info(f"Processed {frame_count} frames")
 
@@ -163,4 +173,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    for _ in main():
+        pass
