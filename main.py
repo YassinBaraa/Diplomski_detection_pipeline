@@ -2,9 +2,9 @@ from pathlib import Path
 
 #from sources.CameraSource import CameraSource
 from sources.MP4Source import MP4Source
-#from sources.NiclaSource import NiclaSource
+from sources.NiclaSource import NiclaSource
 
-#from detectors.HailoSegDetector import HailoSegDetector
+from detectors.HailoSegDetector import HailoSegDetector
 from detectors.YOLOBranchSeg import YOLOBranchSeg
 
 from trackers.ByteTrack import ByteTrack
@@ -33,39 +33,21 @@ logger = logging.getLogger(__name__)
 def main():
     _here = Path(__file__).resolve().parent
 
-    config_dict = {
-        "source": {"type": "mp4", "video_path": str(_here / "sources" / "example.mp4")},
-        "detector": {"type": "yolo_seg", "model_path": str(_here / "model" / "best_small.pt"), "confidence_threshold": 0.7},
-        "visualization": {"enabled": True, "display_window_name": "Detection Pipeline"},
-        "postprocessing_enabled": True,
-    }
-    # config_dict = {
-    #     "source": {"type": "nicla"},
-    #     "detector": {"type": "hailo_seg", "model_path": "model/yolov8_segmentation.hef", "confidence_threshold": 0.7},
-    #     "visualization": {"enabled": True, "display_window_name": "Detection Pipeline"},
-    #     "postprocessing_enabled": True,
-    # }
-
     logger.info("Starting Detection Pipeline")
 
-    source_type = config_dict["source"]["type"]
-    if source_type == "mp4":
-        source = MP4Source(config_dict["source"]["video_path"])
-    elif source_type == "nicla":
+    try:
         source = NiclaSource()
-    else:
-        raise ValueError(f"Unsupported source type: {source_type}")
+        detector = HailoSegDetector(hef_path=str(_here / "model" / "yolov8_segmentation.hef"), conf=0.7)
+        logger.info("Using Nicla source with Hailo detector")
+        print("Source: Nicla + Hailo (.hef)")
+    except Exception as e:
+        logger.warning(f"Nicla/Hailo unavailable ({e}), falling back to MP4 + YOLO")
+        print(f"Source: MP4 + YOLO (.pt) [Nicla unavailable: {e}]")
+        source = MP4Source(str(_here / "sources" / "example.mp4"))
+        detector = YOLOBranchSeg(model_path=str(_here / "model" / "best_small.pt"), conf=0.7)
 
-    detector_conf = config_dict["detector"]["confidence_threshold"]
-    detector_type = config_dict["detector"]["type"]
-    detector_path = config_dict["detector"]["model_path"]
-
-    if detector_type == "yolo_seg":
-        detector = YOLOBranchSeg(model_path=detector_path, conf=detector_conf)
-    elif detector_type == "hailo_seg":
-        detector = HailoSegDetector(hef_path=detector_path, conf=detector_conf)
-    else:
-        raise ValueError(f"Unsupported detector type: {detector_type}")
+    visualization_enabled = True
+    window_name = "Detection Pipeline"
 
     tracker = ByteTrack(detector)
 
@@ -76,12 +58,9 @@ def main():
         CandidateScoring(),
         WarmupFinalPoint(),
         CandidateVisualizer(),
-    ]) if config_dict.get("postprocessing_enabled", True) else None
+    ])
 
     pipeline = DetectionPipeline(source=source, detector=detector, tracker=tracker, postprocessor=postprocessor)
-
-    visualization_enabled = config_dict["visualization"]["enabled"]
-    window_name = config_dict["visualization"]["display_window_name"]
     box_annotator = sv.BoxAnnotator()
     mask_annotator = sv.MaskAnnotator()
     label_annotator = sv.LabelAnnotator()
