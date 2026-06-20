@@ -4,18 +4,18 @@ Real-time computer vision pipeline for tree branch detection and perch point est
 
 ## What It Does
 
-Processes video frames to find the best point on a branch where the UAV can attach a hook. After a 20-second warmup it locks a `final_point` and captures a reference frame — this is handed off to the IBVS pipeline for model-free tracking.
+Processes video frames to find the best point on a branch where the UAV can attach a hook. After a warmup period it clusters observed candidate points and locks a `final_point` with a reference frame snapshot — this is handed off to the IBVS pipeline for model-free KLT tracking.
 
-The pipeline is a generator: `main()` yields a dict each frame consumed by `ibvs/`.
+The pipeline is a generator: `DetectionPipeline.run()` yields a `PipelineContext` each frame.
 
 ---
 
 ## Pipeline Stages
 
 ```
-Frame
+Frame (NiclaSource / MP4Source / CameraSource)
   ↓
-YOLOBranchSeg / HailoSegDetector   — instance segmentation
+HailoSegDetector / YOLOBranchSeg   — instance segmentation (.hef or .pt)
   ↓
 ByteTrack                          — multi-object tracking across frames
   ↓
@@ -25,13 +25,13 @@ DistanceHeatmap                    — euclidean distance transform
   ↓
 BitmaskSkeleton                    — 1-pixel medial axis
   ↓
-CandidateScoring                   — score skeleton points, pick best
+CandidateScoring                   — score skeleton points, pick best candidate
   ↓
-WarmupFinalPoint                   — 20s warmup → lock final_point
+WarmupFinalPoint                   — collect candidates over N frames → cluster → lock final_point
   ↓
-CandidateVisualizer                — draw result on frame
+CandidateVisualizer                — annotate frame
   ↓
-yield dict
+yield PipelineContext
 ```
 
 ---
@@ -40,26 +40,27 @@ yield dict
 
 ```
 detection_pipeline/
-├── main.py                          # Entry point — generator, yields per-frame dict
+├── main.py
+├── test_record.py
 ├── config/
-│   ├── __init__.py                  # ConfigManager (YAML + env var overrides)
-│   └── default_config.yaml
+│   └── __init__.py
 ├── pipeline/
-│   ├── DetectionPipeline.py         # Runs stages in sequence
+│   ├── DetectionPipeline.py         # Orchestrates source → detector → tracker → postprocessor
 │   ├── PipelineContext.py           # Per-frame data container
 │   └── Stage.py                     # Abstract stage base class
 ├── sources/
-│   ├── FrameSource.py               # Abstract interface
-│   ├── MP4Source.py                 # Video file
-│   ├── CameraSource.py              # RPi camera
-│   └── NiclaSource.py              # Nicla Vision (camera + ToF over serial)
+│   ├── FrameSource.py
+│   ├── MP4Source.py
+│   ├── CameraSource.py
+│   └── NiclaSource.py               # Nicla Vision: OV5647 camera + VL53L1X ToF over USB serial
 ├── detectors/
-│   ├── Detector.py                  # Abstract interface
-│   ├── YOLOBranchSeg.py             # YOLOv8 segmentation (CPU/GPU)
-│   └── HailoSegDetector.py          # Hailo-8 accelerated inference
+│   ├── Detector.py
+│   ├── HailoSegDetector.py          # Hailo-8 accelerated YOLOv8-seg inference (.hef)
+│   ├── YOLOBranchSeg.py             # YOLOv8-seg via ultralytics (.pt)
+│   └── YOLOBranchDet.py             # YOLOv8 detection-only variant
 ├── trackers/
 │   ├── Tracker.py
-│   └── ByteTrack.py
+│   └── ByteTrack.py                 # supervision ByteTrack wrapper
 ├── postprocessing/
 │   ├── PostProcessor.py
 │   ├── masks/MaskExtraction.py
@@ -69,71 +70,83 @@ detection_pipeline/
 │   │   └── LineFit.py
 │   └── scoring/
 │       ├── CandidateScoring.py
-│       ├── WarmupFinalPoint.py      # Warmup logic + final_point locking
+│       ├── WarmupFinalPoint.py      # Warmup → hierarchical clustering → final_point lock
 │       └── CandidateVisualizer.py
 └── model/
-    └── best_small.pt                # Pre-trained YOLO weights (place here)
+    └── yolov8_segmentation.hef      # Hailo-compiled model (place here)
 ```
 
 ---
 
-## Yield Output (per frame)
+## NiclaSource
 
-```python
-{
-    "frame": np.ndarray,          # BGR image
-    "final_point": dict | None,   # {"x": int, "y": int} — locked after 20s warmup
-    "best_candidate": dict | None,# {"x": int, "y": int, "score": float, ...}
-    "reference_frame": np.ndarray | None,  # frame captured when final_point locked
-    "distance_mm": int | None,    # ToF reading from NiclaSource
-    "frame_w": int,
-    "frame_h": int,
-}
+Reads JPEG frames and ToF distance from an Arduino Nicla Vision over USB serial (`/dev/ttyACM0`, 115200 baud).
+
+The Nicla runs a MicroPython script that streams framed packets:
+```
+IMG:<length>\n<jpeg bytes>DIST:<mm>\n
 ```
 
-`final_point` is `None` during warmup. After warmup it stays locked until the pipeline ends.
+**Auto-mount issue**: Linux (udisks2) auto-mounts the Nicla flash as a USB drive, which pauses MicroPython and stops the stream. Install this udev rule to prevent it:
+
+```
+# /etc/udev/rules.d/99-nicla-vision.rules
+ACTION=="add", SUBSYSTEM=="block", ATTRS{idVendor}=="2341", ATTRS{idProduct}=="055f", ENV{UDISKS_AUTO}="0", ENV{UDISKS_IGNORE}="1"
+```
+
+```bash
+sudo udevadm control --reload-rules
+# Replug the Nicla
+```
+
+`NiclaSource` detects a silent Nicla (no `IMG:` within 8 s) and automatically sends `pyb.hard_reset()` over the REPL, up to 2 attempts before raising `RuntimeError`.
+
+## HailoSegDetector
+
+Runs YOLOv8-seg on Hailo-8 via `hailo_platform.VDevice`. Decodes raw output tensors: DFL box regression, sigmoid class scores, and mask coefficients. Post-processing (NMS) runs on CPU. Requires `hailort >= 4.23`.
+
+---
+
+## PipelineContext Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `frame` | `np.ndarray` | BGR image |
+| `source_metadata` | `dict` | e.g. `{"distance_mm": 320}` |
+| `detections` | `np.ndarray [N,4]` | xyxy bounding boxes |
+| `masks` | `np.ndarray [N,H,W]` | binary segmentation masks |
+| `confidences` | `np.ndarray [N]` | detection scores |
+| `tracks` | `list` | active ByteTrack tracks |
+| `best_candidate` | `dict \| None` | `{"x", "y", "score", ...}` |
+| `final_point` | `dict \| None` | `{"x", "y"}` locked after warmup |
+| `reference_frame` | `np.ndarray \| None` | frame snapshot when final_point locked |
+| `debug` | `dict` | per-stage diagnostics |
+
+`final_point` is `None` during warmup. After warmup it is re-emitted every frame unchanged.
 
 ---
 
 ## Installation
 
 ```bash
-pip install ultralytics supervision opencv-python numpy scikit-image pyyaml
-# For Hailo:
-pip install hailo_platform
-# For RPi camera:
+pip install ultralytics supervision opencv-python numpy scipy scikit-image pyserial
+
+# Hailo-8
+pip install hailo_platform   # also requires hailort system package (4.23+)
+
+# RPi camera
 pip install picamera2
 ```
 
-## Usage
+## Running
 
 ```bash
-# Standalone (opens window)
-python main.py
-
-# Headless
-PIPELINE_VISUALIZATION_ENABLED=false python main.py
-
-# Custom video
-PIPELINE_VIDEO_PATH=path/to/video.mp4 python main.py
-
-# Nicla Vision source (serial)
-PIPELINE_SOURCE_TYPE=nicla PIPELINE_NICLA_SERIAL_PORT=/dev/ttyACM0 python main.py
-
-# Hailo detector
-PIPELINE_DETECTOR_TYPE=hailo_seg python main.py
+python main.py          # standalone with display
+python test_record.py   # record output to video
 ```
 
-## Configuration
+## Platform
 
-Edit `config/default_config.yaml` or override with `PIPELINE_*` environment variables.
-
-Key parameters:
-
-| Key | Default | Description |
-|-----|---------|-------------|
-| `source.type` | `mp4` | `mp4`, `camera`, `nicla` |
-| `detector.type` | `yolo_seg` | `yolo_seg`, `hailo_seg` |
-| `detector.confidence_threshold` | `0.5` | Detection confidence cutoff |
-| `warmup.duration_seconds` | `20` | Warmup before final_point locks |
-| `visualization.enabled` | `true` | Show OpenCV window |
+- **Inference**: Hailo-8 AI HAT on Raspberry Pi 5 (hailort 4.23)
+- **Camera/ToF**: Arduino Nicla Vision (OV5647 + VL53L1X)
+- **Fallback**: `.pt` YOLOv8 model via `YOLOBranchSeg` (no Hailo required)

@@ -13,6 +13,7 @@ class DetectionPipeline:
         self.postprocessor = postprocessor
 
     def run(self):
+        frame_n = 0
         while True:
             read_result = self.source.read()
             if not isinstance(read_result, tuple):
@@ -26,7 +27,12 @@ class DetectionPipeline:
                 raise ValueError("FrameSource.read() must return 2 or 3 values")
 
             if not ret or frame is None:
+                print("[DetectionPipeline] Source exhausted — stopping")
                 break
+
+            frame_n += 1
+            dist = (source_metadata or {}).get("distance_mm")
+            print(f"[DetectionPipeline] Frame {frame_n}: read OK, dist={dist} mm, shape={frame.shape[:2]}")
 
             ctx = PipelineContext(frame=frame, source_metadata=source_metadata)
 
@@ -47,6 +53,9 @@ class DetectionPipeline:
                     ctx.confidences = None
                     ctx.class_ids = None
 
+                n_det = len(ctx.detections) if ctx.detections is not None and len(ctx.detections) > 0 else 0
+                print(f"[DetectionPipeline] Frame {frame_n}: detector found {n_det} detections")
+
                 track_result = self.tracker.track(
                     frame,
                     results=ctx.results,
@@ -56,8 +65,6 @@ class DetectionPipeline:
                     class_ids=ctx.class_ids,
                 )
 
-                # ByteTrack returns (tracks_list, sv.Detections)
-                # tracks_list is used by postprocessing, sv_detections for visualization
                 if (
                     isinstance(track_result, tuple)
                     and len(track_result) == 2
@@ -68,8 +75,15 @@ class DetectionPipeline:
                     ctx.tracks = track_result
                     ctx.sv_detections = None
 
+                n_tracks = len(ctx.tracks) if ctx.tracks else 0
+                print(f"[DetectionPipeline] Frame {frame_n}: tracker has {n_tracks} active tracks")
+
                 if self.postprocessor is not None:
                     ctx = self.postprocessor.process(ctx)
+                    fp = getattr(ctx, "final_point", None)
+                    bc = getattr(ctx, "best_candidate", None)
+                    print(f"[DetectionPipeline] Frame {frame_n}: postprocessor — "
+                          f"final_point={fp}, best_candidate={bc}")
 
             except Exception as e:
                 logger.error(f"Pipeline error processing frame: {e}", exc_info=True)

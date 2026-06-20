@@ -4,7 +4,7 @@ from hailo_platform import VDevice
 from detectors.Detector import Detector
 
 HEF_PATH    = "model/yolov8_segmentation.hef"
-CONF_THRESH = 0.8
+CONF_THRESH = 0.5
 INPUT_SIZE  = 640
 
 
@@ -38,12 +38,15 @@ class HailoSegDetector(Detector):
             o.name: np.empty(o.shape, dtype=np.uint8)
             for o in self._infer_model.outputs
         }
+        self._quant = {
+            o.name: (o.quant_infos[0].qp_scale, o.quant_infos[0].qp_zp)
+            for o in self._infer_model.outputs
+        }
         self._bindings = self._configured.create_bindings()
         for name, buf in self._out_bufs.items():
             self._bindings.output(name).set_buffer(buf)
 
     def predict(self, frame):
-
         orig_h, orig_w = frame.shape[:2]
         rgb     = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         resized = cv2.resize(rgb, (self._w, self._h))
@@ -51,39 +54,41 @@ class HailoSegDetector(Detector):
         self._bindings.input().set_buffer(resized)
         self._configured.run([self._bindings], timeout=1000)
 
-        float_out    = {k: v.astype(np.float32) for k, v in self._out_bufs.items()}
-        dets, proto  = self._parse_seg_outputs(float_out, orig_w, orig_h)
+        float_out   = {
+            k: (v.astype(np.float32) - self._quant[k][1]) * self._quant[k][0]
+            for k, v in self._out_bufs.items()
+        }
+        dets, proto = self._parse_seg_outputs(float_out, orig_w, orig_h)
 
-        if not dets:
-            empty = np.array([])
-            empty_ids = np.array([], dtype=np.int32)
-            return None, empty, None, empty, empty_ids
+        empty_boxes = np.array([], dtype=np.float32).reshape(0, 4)
+        empty_conf  = np.array([], dtype=np.float32)
+        empty_ids   = np.array([], dtype=np.int32)
+
+        if not dets or proto is None:
+            return None, empty_boxes, None, empty_conf, empty_ids
 
         bboxes      = np.array([[d[0], d[1], d[2], d[3]] for d in dets], dtype=np.float32)
-        confidences = np.array([d[4] for d in dets],                      dtype=np.float32)
+        confidences = np.array([d[4] for d in dets], dtype=np.float32)
         class_ids   = np.zeros(len(dets), dtype=np.int32)
 
-        # Build per-detection binary masks at frame resolution
-        # Build per-detection binary masks at frame resolution
-        masks = None
-        if proto is not None:
-            masks = []
-            for i, det in enumerate(dets):
-                x1, y1, x2, y2 = int(dets[i][0]), int(dets[i][1]), int(dets[i][2]), int(dets[i][3])
-                coeffs = det[5]
-                if coeffs is not None:
-                    m = _sigmoid(np.einsum('c,chw->hw', coeffs, proto))
-                    m = cv2.resize(m, (orig_w, orig_h))
-                    binary = (m > 0.5).astype(np.uint8)
+        masks = []
+        for det in dets:
+            x1, y1, x2, y2 = int(det[0]), int(det[1]), int(det[2]), int(det[3])
+            coeffs = det[5]
 
-                    # Clip mask to bounding box — prevents full-frame bleed
-                    clipped = np.zeros_like(binary)
-                    clipped[y1:y2, x1:x2] = binary[y1:y2, x1:x2]
+            if coeffs is None:
+                masks.append(np.zeros((orig_h, orig_w), dtype=bool))
+                continue
 
-                    masks.append(clipped)
-                else:
-                    masks.append(np.zeros((orig_h, orig_w), dtype=np.uint8))
-            masks = np.array(masks, dtype=bool)  # [N, orig_h, orig_w]
+            m      = _sigmoid(np.einsum('c,chw->hw', coeffs, proto))  # [160,160]
+            m      = cv2.resize(m, (orig_w, orig_h))                   # [orig_h, orig_w]
+            binary = (m > 0.5)
+
+            clipped = np.zeros((orig_h, orig_w), dtype=bool)
+            clipped[y1:y2, x1:x2] = binary[y1:y2, x1:x2]
+            masks.append(clipped)
+
+        masks = np.array(masks, dtype=bool)  # [N, orig_h, orig_w]
 
         return None, bboxes, masks, confidences, class_ids
 
@@ -120,7 +125,7 @@ class HailoSegDetector(Detector):
             if stride not in box_map or stride not in cls_map:
                 continue
             box_raw = box_map[stride]
-            scores  = _sigmoid(cls_map[stride])
+            scores  = cls_map[stride]   # Hailo applies sigmoid inside HEF; values already in [0,1]
             coeffs  = coeff_map.get(stride)
             H, W    = scores.shape
             ltrb    = _dfl_decode(box_raw)
