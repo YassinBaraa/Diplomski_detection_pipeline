@@ -2,7 +2,7 @@
 
 # Source Configuration
 source:
-  type: "nicla"  # "mp4", "camera", or "nicla"
+  type: "dsj"  # "dsj", "mp4", "camera", or "nicla"
   video_path: "sources/example.mp4"  # Path to video file
   nicla_serial_port: "/dev/ttyACM0"
   nicla_baudrate: 115200
@@ -14,11 +14,20 @@ detector:
   model_path: "model/yolov8_segmentation.hef"
   confidence_threshold: 0.6
 
-# Camera Configuration (if source type is "camera")
+# Camera Configuration (if source type is "camera", i.e. Pi camera via picamera2)
 camera:
   resolution_width: 1280
   resolution_height: 720
   format: "RGB888"
+
+# DSJ-3079-HE USB camera (if source type is "dsj") -- standard UVC device,
+# resolved by udev by-id path (see sources/DSJSource.py); device/width/height/fps
+# below are only used if that resolution fails and it falls back to an index.
+dsj:
+  device_fallback: 0
+  resolution_width: 1280
+  resolution_height: 720
+  fps: 30
 
 # Post-Processing: Mask Extraction
 mask_extraction:

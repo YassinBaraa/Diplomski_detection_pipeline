@@ -13,7 +13,7 @@ The pipeline is a generator: `DetectionPipeline.run()` yields a `PipelineContext
 ## Pipeline Stages
 
 ```
-Frame (NiclaSource / MP4Source / CameraSource)
+Frame (DSJSource / NiclaSource / MP4Source / CameraSource)
   ↓
 HailoSegDetector / YOLOBranchSeg   — instance segmentation (.hef or .pt)
   ↓
@@ -52,6 +52,7 @@ detection_pipeline/
 │   ├── FrameSource.py
 │   ├── MP4Source.py
 │   ├── CameraSource.py
+│   ├── DSJSource.py                 # DSJ-3079-HE: USB UVC camera (default)
 │   └── NiclaSource.py               # Nicla Vision: OV5647 camera + VL53L1X ToF over USB serial
 ├── detectors/
 │   ├── Detector.py
@@ -77,6 +78,23 @@ detection_pipeline/
 ```
 
 ---
+
+## DSJSource
+
+Default camera. The DSJ-3079-HE is a standard UVC (USB Video Class) device
+(Realtek UC60 bridge chip, USB ID `0bda:5805`) — driven entirely by the
+kernel's `uvcvideo` driver via V4L2/OpenCV, no vendor SDK needed. Captures
+MJPG at 1280×720@30fps by default (native modes up to 3264×2448@15fps).
+
+It resolves its device path via udev's `/dev/v4l/by-id/*DSJ_UC60_Video*`
+symlink rather than a hardcoded `/dev/videoN` index, since USB enumeration
+order isn't guaranteed to survive a reboot/replug. Falls back to device index
+`0` if no by-id match is found (e.g. a differently-branded UC60 clone).
+
+It exposes two `/dev/videoN` nodes — one actual capture node, one
+metadata-only (`v4l2-ctl -d <dev> --list-formats-ext` shows which is which;
+the capture node lists MJPG/YUYV formats, the metadata node lists none).
+`DSJSource` always opens the capture node.
 
 ## NiclaSource
 
@@ -112,7 +130,7 @@ Runs YOLOv8-seg on Hailo-8 via `hailo_platform.VDevice`. Decodes raw output tens
 | Field | Type | Description |
 |-------|------|-------------|
 | `frame` | `np.ndarray` | BGR image |
-| `source_metadata` | `dict` | e.g. `{"distance_mm": 320}` |
+| `source_metadata` | `dict \| None` | source-specific extra data (currently unused; the Nicla still frames each JPEG with a ToF reading over serial, but it is discarded, not surfaced here) |
 | `detections` | `np.ndarray [N,4]` | xyxy bounding boxes |
 | `masks` | `np.ndarray [N,H,W]` | binary segmentation masks |
 | `confidences` | `np.ndarray [N]` | detection scores |
@@ -141,12 +159,12 @@ pip install picamera2
 ## Running
 
 ```bash
-python main.py          # standalone with display
+python main.py          # standalone with display (DSJ + Hailo, falls back to MP4 + YOLO)
 python test_record.py   # record output to video
 ```
 
 ## Platform
 
 - **Inference**: Hailo-8 AI HAT on Raspberry Pi 5 (hailort 4.23)
-- **Camera/ToF**: Arduino Nicla Vision (OV5647 + VL53L1X)
+- **Camera**: DSJ-3079-HE USB UVC camera (default); Arduino Nicla Vision (OV5647 + VL53L1X ToF) also supported
 - **Fallback**: `.pt` YOLOv8 model via `YOLOBranchSeg` (no Hailo required)

@@ -62,8 +62,10 @@ class NiclaSource(FrameSource):
                 try:
                     length = int(line[4:])
                     jpg_data = self.ser.read(length)
-                    dist_line = self.ser.readline().decode(errors='ignore').strip()
-                    dist_mm = int(dist_line.split(":")[1])
+                    # ToF distance is no longer used, but the Nicla's wire protocol still
+                    # frames each JPEG with a trailing "DIST:<mm>\n" line -- it must be
+                    # consumed here or the next read() desyncs on the following IMG: header.
+                    self.ser.readline()
                     img = cv2.imdecode(np.frombuffer(jpg_data, dtype=np.uint8), cv2.IMREAD_COLOR)
                     if img is None:
                         continue
@@ -80,7 +82,7 @@ class NiclaSource(FrameSource):
                             )
                         self._video_writer.write(img)
 
-                    return True, img, {"distance_mm": dist_mm}
+                    return True, img, None
                 except Exception as e:
                     print(f"[NiclaSource] Frame parse error: {e}")
                     continue

@@ -31,8 +31,7 @@ class DetectionPipeline:
                 break
 
             frame_n += 1
-            dist = (source_metadata or {}).get("distance_mm")
-            print(f"[DetectionPipeline] Frame {frame_n}: read OK, dist={dist} mm, shape={frame.shape[:2]}")
+            print(f"[DetectionPipeline] Frame {frame_n}: read OK, shape={frame.shape[:2]}")
 
             ctx = PipelineContext(frame=frame, source_metadata=source_metadata)
 

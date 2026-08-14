@@ -2,7 +2,7 @@ from pathlib import Path
 
 #from sources.CameraSource import CameraSource
 from sources.MP4Source import MP4Source
-from sources.NiclaSource import NiclaSource
+from sources.DSJSource import DSJSource
 
 from detectors.HailoSegDetector import HailoSegDetector
 from detectors.YOLOBranchSeg import YOLOBranchSeg
@@ -36,13 +36,13 @@ def main():
     logger.info("Starting Detection Pipeline")
 
     try:
-        source = NiclaSource()
+        source = DSJSource()
         detector = HailoSegDetector(hef_path=str(_here / "model" / "yolov8_segmentation.hef"), conf=0.7)
-        logger.info("Using Nicla source with Hailo detector")
-        print("Source: Nicla + Hailo (.hef)")
+        logger.info("Using DSJ source with Hailo detector")
+        print("Source: DSJ-3079-HE + Hailo (.hef)")
     except Exception as e:
-        logger.warning(f"Nicla/Hailo unavailable ({e}), falling back to MP4 + YOLO")
-        print(f"Source: MP4 + YOLO (.pt) [Nicla unavailable: {e}]")
+        logger.warning(f"DSJ/Hailo unavailable ({e}), falling back to MP4 + YOLO")
+        print(f"Source: MP4 + YOLO (.pt) [DSJ unavailable: {e}]")
         source = MP4Source(str(_here / "sources" / "example.mp4"))
         detector = YOLOBranchSeg(model_path=str(_here / "model" / "best_small.pt"), conf=0.7)
 
@@ -93,9 +93,6 @@ def main():
                 "final_point": ctx.final_point,
                 "best_candidate": ctx.best_candidate,
                 "reference_frame": ctx.reference_frame,
-                "distance_mm": (ctx.source_metadata or {}).get("distance_mm"),
-                "frame_w": ctx.frame.shape[1],
-                "frame_h": ctx.frame.shape[0],
             }
 
             if frame_count % 30 == 0:
