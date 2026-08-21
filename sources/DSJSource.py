@@ -10,6 +10,12 @@ DEVICE_FALLBACK = 0
 
 FRAME_WIDTH = 1280
 FRAME_HEIGHT = 720
+# The full pipeline (detection + KLT tracking + recording) can't sustain the
+# camera's native rate -- requesting 30fps let frames queue up in V4L2's
+# buffer faster than they were drained, so target_point fell further and
+# further behind real time as a run went on (traced live: lag grew from ~2s
+# to over 20s within a single run). Capped to what the pipeline can actually
+# keep up with, so there's less to queue in the first place.
 FPS = 30
 
 
@@ -46,6 +52,14 @@ class DSJSource(FrameSource):
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         self.cap.set(cv2.CAP_PROP_FPS, fps)
+        # Keep V4L2's internal queue at 1 frame: the pipeline (detection +
+        # tracking + recording) can't sustain the camera's native rate, and
+        # without this the queue backs up silently -- read() keeps returning
+        # the OLDEST buffered frame, so the reported target_point falls
+        # further and further behind real time the longer a run goes (traced
+        # live: growing lag from ~2s to over 20s within a single run). This
+        # drops stale frames instead of processing them late.
+        self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
         actual_w = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         actual_h = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))

@@ -3,7 +3,7 @@ from pipeline.Stage import Stage
 from scipy.cluster.hierarchy import fclusterdata
 
 
-WARMUP_FRAMES = 200  # frames to observe before locking final point (~20s at 10fps)
+WARMUP_FRAMES = 50  # frames to observe before locking final point (~5s at 10fps)
 CLUSTER_DISTANCE_THRESHOLD = 30  # pixels
 
 

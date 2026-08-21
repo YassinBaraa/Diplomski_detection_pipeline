@@ -1,6 +1,7 @@
 from pipeline.PipelineContext import PipelineContext
 import numpy as np
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,9 @@ class DetectionPipeline:
     def run(self):
         frame_n = 0
         while True:
+            t_read0 = time.monotonic()
             read_result = self.source.read()
+            t_read1 = time.monotonic()
             if not isinstance(read_result, tuple):
                 raise ValueError("FrameSource.read() must return a tuple")
             if len(read_result) == 2:
@@ -36,7 +39,9 @@ class DetectionPipeline:
             ctx = PipelineContext(frame=frame, source_metadata=source_metadata)
 
             try:
+                t_det0 = time.monotonic()
                 prediction = self.detector.predict(frame)
+                t_det1 = time.monotonic()
                 if isinstance(prediction, tuple):
                     if len(prediction) == 4:
                         ctx.results, ctx.detections, ctx.masks, ctx.confidences = prediction
@@ -55,6 +60,7 @@ class DetectionPipeline:
                 n_det = len(ctx.detections) if ctx.detections is not None and len(ctx.detections) > 0 else 0
                 print(f"[DetectionPipeline] Frame {frame_n}: detector found {n_det} detections")
 
+                t_track0 = time.monotonic()
                 track_result = self.tracker.track(
                     frame,
                     results=ctx.results,
@@ -63,6 +69,7 @@ class DetectionPipeline:
                     confidences=ctx.confidences,
                     class_ids=ctx.class_ids,
                 )
+                t_track1 = time.monotonic()
 
                 if (
                     isinstance(track_result, tuple)
@@ -77,12 +84,21 @@ class DetectionPipeline:
                 n_tracks = len(ctx.tracks) if ctx.tracks else 0
                 print(f"[DetectionPipeline] Frame {frame_n}: tracker has {n_tracks} active tracks")
 
+                t_post0 = time.monotonic()
                 if self.postprocessor is not None:
                     ctx = self.postprocessor.process(ctx)
                     fp = getattr(ctx, "final_point", None)
                     bc = getattr(ctx, "best_candidate", None)
                     print(f"[DetectionPipeline] Frame {frame_n}: postprocessor — "
                           f"final_point={fp}, best_candidate={bc}")
+                t_post1 = time.monotonic()
+
+                print(f"[DetectionPipeline] Frame {frame_n}: TIMING — "
+                      f"read={1000*(t_read1-t_read0):.0f}ms "
+                      f"detect={1000*(t_det1-t_det0):.0f}ms "
+                      f"track={1000*(t_track1-t_track0):.0f}ms "
+                      f"postprocess={1000*(t_post1-t_post0):.0f}ms "
+                      f"total={1000*(t_post1-t_read0):.0f}ms")
 
             except Exception as e:
                 logger.error(f"Pipeline error processing frame: {e}", exc_info=True)
