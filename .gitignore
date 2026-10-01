@@ -2,3 +2,6 @@
 */runs
 */.venv
 */sam3
+__pycache__/
+*.pyc
+/detection_test
