@@ -10,7 +10,7 @@ sys.path.insert(0, str(_HERE))
 
 from sources.MP4Source import MP4Source
 from detectors.YOLOBranchSeg import YOLOBranchSeg
-from trackers.ByteTrack import ByteTrack
+from trackers.build_tracker import build_tracker
 from postprocessing.PostProcessor import PostProcessor
 from postprocessing.masks.MaskExtraction import MaskExtraction
 from postprocessing.geometry.DistanceHeatmap import DistanceHeatmap
@@ -19,17 +19,21 @@ from postprocessing.scoring.CandidateScoring import CandidateScoring
 from postprocessing.scoring.WarmupFinalPoint import WarmupFinalPoint
 from postprocessing.scoring.CandidateVisualizer import CandidateVisualizer
 from pipeline.DetectionPipeline import DetectionPipeline
+from config import ConfigManager
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-OUT_DIR     = _HERE / "detection_test"
-EXAMPLE_MP4 = _HERE / "sources" / "example.mp4"
-YOLO_PATH   = str(_HERE / "model" / "best_small.pt")
-CONF        = 0.4
+_config     = ConfigManager()
+_cfg        = _config.get_section("test_record")
+TRACKING    = _config.get_section("tracking")
+OUT_DIR     = _HERE / _cfg["output_dir"]
+VIDEOS      = sorted(Path(_cfg["video_dir"]).glob("*.mp4"))
+YOLO_PATH   = str(_HERE / _cfg["model_path"])
+CONF        = _config.get("detector.confidence_threshold")
+STAGES      = _cfg["stages"]
 VIS_W       = 640
 VIS_H       = 384
-MP4_FPS     = 12
 NICLA_FPS   = 10
 
 
@@ -109,13 +113,14 @@ def vis_stage5_full(ctx):
     return ctx.frame.copy() if ctx.frame is not None else np.zeros((VIS_H, VIS_W, 3), dtype=np.uint8)
 
 
-def run_mp4_stage(idx, name, stages, vis_fn, detector):
-    out_path = OUT_DIR / f"mp4_stage_{idx}_{name}.mp4"
-    source = MP4Source(str(EXAMPLE_MP4))
-    tracker = ByteTrack(detector)
+def run_mp4_stage(video, idx, name, stages, vis_fn, detector):
+    out_path = OUT_DIR / f"{video.stem}_stage_{idx}_{name}_det{CONF}_act{TRACKING['track_activation_threshold']}_coast{TRACKING['coast_frames']}.mp4"
+    source = MP4Source(str(video))
+    fps = source.cap.get(cv2.CAP_PROP_FPS) or 25
+    tracker = build_tracker(detector, TRACKING)
     postprocessor = PostProcessor(stages)
     pipeline = DetectionPipeline(source, detector, tracker, postprocessor)
-    writer = create_writer(out_path, VIS_W, VIS_H, MP4_FPS)
+    writer = create_writer(out_path, VIS_W, VIS_H, fps)
     frame_count = 0
     try:
         for ctx in pipeline.run():
@@ -133,7 +138,7 @@ def run_mp4_stage(idx, name, stages, vis_fn, detector):
 def run_nicla_phase(detector):
     out_path = OUT_DIR / "nicla_full_pipeline.mp4"
     source = NiclaSource()
-    tracker = ByteTrack(detector)
+    tracker = build_tracker(detector, TRACKING)
     postprocessor = PostProcessor([
         MaskExtraction(), DistanceHeatmap(), BitmaskSkeleton(),
         CandidateScoring(), WarmupFinalPoint(), CandidateVisualizer(),
@@ -173,9 +178,12 @@ def main():
     ]
 
     detector = YOLOBranchSeg(YOLO_PATH, conf=CONF)
-    for idx, name, stages, vis_fn in STAGE_CONFIGS:
-        logger.info(f"--- Stage {idx}: {name} ---")
-        run_mp4_stage(idx, name, stages, vis_fn, detector)
+    for video in VIDEOS:
+        for idx, name, stages, vis_fn in STAGE_CONFIGS:
+            if idx not in STAGES:
+                continue
+            logger.info(f"--- {video.name} / Stage {idx}: {name} ---")
+            run_mp4_stage(video, idx, name, stages, vis_fn, detector)
 
     logger.info("All recordings complete.")
 

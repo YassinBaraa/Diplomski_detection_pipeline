@@ -7,7 +7,8 @@ from sources.DSJSource import DSJSource
 from detectors.HailoSegDetector import HailoSegDetector
 from detectors.YOLOBranchSeg import YOLOBranchSeg
 
-from trackers.ByteTrack import ByteTrack
+from trackers.build_tracker import build_tracker
+from config import ConfigManager
 
 from postprocessing.PostProcessor import PostProcessor
 from postprocessing.masks.MaskExtraction import MaskExtraction
@@ -34,22 +35,24 @@ def main():
     _here = Path(__file__).resolve().parent
 
     logger.info("Starting Detection Pipeline")
+    config = ConfigManager()
+    conf = config.get("detector.confidence_threshold")
 
     try:
         source = DSJSource()
-        detector = HailoSegDetector(hef_path=str(_here / "model" / "yolov8_segmentation.hef"), conf=0.7)
+        detector = HailoSegDetector(hef_path=str(_here / "model" / "yolov8_segmentation.hef"), conf=conf)
         logger.info("Using DSJ source with Hailo detector")
         print("Source: DSJ-3079-HE + Hailo (.hef)")
     except Exception as e:
         logger.warning(f"DSJ/Hailo unavailable ({e}), falling back to MP4 + YOLO")
         print(f"Source: MP4 + YOLO (.pt) [DSJ unavailable: {e}]")
         source = MP4Source(str(_here / "sources" / "example.mp4"))
-        detector = YOLOBranchSeg(model_path=str(_here / "model" / "best_small.pt"), conf=0.7)
+        detector = YOLOBranchSeg(model_path=str(_here / "model" / "best_small.pt"), conf=conf)
 
     visualization_enabled = True
     window_name = "Detection Pipeline"
 
-    tracker = ByteTrack(detector)
+    tracker = build_tracker(detector, config.get_section("tracking"))
 
     postprocessor = PostProcessor([
         MaskExtraction(),

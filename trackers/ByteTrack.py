@@ -5,9 +5,18 @@ from trackers.Tracker import Tracker
 
 
 class ByteTrack(Tracker):
-    def __init__(self, detector, tracker_model=None, label_annotator=None):
+    def __init__(self, detector, tracker_model=None, label_annotator=None,
+                 track_activation_threshold=0.25, lost_track_buffer=30,
+                 minimum_consecutive_frames=1):
         super().__init__()
-        self.tracker = tracker_model if tracker_model is not None else sv.ByteTrack()
+        # Detector confidence should be set low (e.g. 0.25): detections below
+        # track_activation_threshold can only keep an existing track alive,
+        # they can't start a new one (ByteTrack's two-stage association).
+        self.tracker = tracker_model if tracker_model is not None else sv.ByteTrack(
+            track_activation_threshold=track_activation_threshold,
+            lost_track_buffer=lost_track_buffer,
+            minimum_consecutive_frames=minimum_consecutive_frames,
+        )
         self.label_annotator = label_annotator if label_annotator is not None else sv.LabelAnnotator()
         self.box_annotator = sv.BoxAnnotator()
         self.mask_annotator = sv.MaskAnnotator()
@@ -16,8 +25,6 @@ class ByteTrack(Tracker):
     def track(self, frame, results=None, bboxes=None, masks=None, confidences=None, class_ids=None):
         if isinstance(results, sv.Detections):
             detections = results
-        elif results is not None:
-            detections = sv.Detections.from_ultralytics(results)
         elif bboxes is not None and len(bboxes) > 0:
             if confidences is None or len(confidences) == 0:
                 confidences = np.zeros(len(bboxes), dtype=np.float32)
@@ -27,8 +34,8 @@ class ByteTrack(Tracker):
                 masks = None
 
             # Cast masks to bool to satisfy supervision >= 0.28.0
-            if masks is not None:
-                masks = masks.astype(bool)
+            if masks is not None and masks.dtype != bool:
+                masks = masks > 0.5
 
             detections = sv.Detections(
                 xyxy=np.array(bboxes, dtype=np.float32),
@@ -36,6 +43,8 @@ class ByteTrack(Tracker):
                 confidence=np.array(confidences, dtype=np.float32),
                 class_id=np.array(class_ids, dtype=np.int32),
             )
+        elif results is not None:
+            detections = sv.Detections.from_ultralytics(results)
         else:
             return [], sv.Detections.empty()
 

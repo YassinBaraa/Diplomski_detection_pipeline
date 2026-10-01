@@ -81,6 +81,11 @@ class DetectionPipeline:
                     ctx.tracks = track_result
                     ctx.sv_detections = None
 
+                # Keep only the masks of detections the tracker confirmed, so
+                # low-confidence detections don't leak into the binary mask.
+                if ctx.sv_detections is not None:
+                    ctx.masks = ctx.sv_detections.mask
+
                 n_tracks = len(ctx.tracks) if ctx.tracks else 0
                 print(f"[DetectionPipeline] Frame {frame_n}: tracker has {n_tracks} active tracks")
 

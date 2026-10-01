@@ -12,7 +12,7 @@ source:
 detector:
   type: "hailo_seg"  # "yolo_seg" or "hailo_seg"
   model_path: "model/yolov8_segmentation.hef"
-  confidence_threshold: 0.6
+  confidence_threshold: 0.25   # low on purpose: the tracker (tracking.*) decides what counts
 
 # Camera Configuration (if source type is "camera", i.e. Pi camera via picamera2)
 camera:
@@ -63,3 +63,18 @@ visualization:
   resize_width: 640
   resize_height: 384
   display_window_name: "Detection Pipeline"
+
+# Tracking: ByteTrack hysteresis + Kalman coasting (used by main.py and test_record.py)
+tracking:
+  track_activation_threshold: 0.5   # min conf to START a track (lower-conf dets only keep one alive)
+  lost_track_buffer: 30
+  minimum_consecutive_frames: 1
+  coast_frames: 5                   # Kalman-coast lost tracks this many frames (0 = off)
+
+# test_record.py: run the .pt model over recorded videos and save annotated output
+# (detector confidence and tracking settings come from the sections above)
+test_record:
+  video_dir: "/home/baraa/Desktop/Paper_1/recordings"  # every *.mp4 in here is processed
+  model_path: "model/best_small.pt"
+  stages: [5]                 # 1=mask 2=heatmap 3=skeleton 4=candidates 5=full pipeline overlay
+  output_dir: "detection_test"
