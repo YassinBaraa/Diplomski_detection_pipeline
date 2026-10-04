@@ -15,7 +15,6 @@ from postprocessing.masks.MaskExtraction import MaskExtraction
 from postprocessing.geometry.DistanceHeatmap import DistanceHeatmap
 from postprocessing.geometry.BitmaskSkeleton import BitmaskSkeleton
 from postprocessing.scoring.CandidateScoring import CandidateScoring
-from postprocessing.scoring.WarmupFinalPoint import WarmupFinalPoint
 from postprocessing.scoring.CandidateVisualizer import CandidateVisualizer
 
 from pipeline.DetectionPipeline import DetectionPipeline
@@ -59,7 +58,6 @@ def main():
         DistanceHeatmap(),
         BitmaskSkeleton(),
         CandidateScoring(),
-        WarmupFinalPoint(),
         CandidateVisualizer(),
     ])
 
@@ -93,9 +91,7 @@ def main():
 
             yield {
                 "frame": ctx.frame,
-                "final_point": ctx.final_point,
                 "best_candidate": ctx.best_candidate,
-                "reference_frame": ctx.reference_frame,
             }
 
             if frame_count % 30 == 0:

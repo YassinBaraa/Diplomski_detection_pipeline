@@ -16,7 +16,6 @@ from postprocessing.masks.MaskExtraction import MaskExtraction
 from postprocessing.geometry.DistanceHeatmap import DistanceHeatmap
 from postprocessing.geometry.BitmaskSkeleton import BitmaskSkeleton
 from postprocessing.scoring.CandidateScoring import CandidateScoring
-from postprocessing.scoring.WarmupFinalPoint import WarmupFinalPoint
 from postprocessing.scoring.CandidateVisualizer import CandidateVisualizer
 from pipeline.DetectionPipeline import DetectionPipeline
 from config import ConfigManager
@@ -141,7 +140,7 @@ def run_nicla_phase(detector):
     tracker = build_tracker(detector, TRACKING)
     postprocessor = PostProcessor([
         MaskExtraction(), DistanceHeatmap(), BitmaskSkeleton(),
-        CandidateScoring(), WarmupFinalPoint(), CandidateVisualizer(),
+        CandidateScoring(), CandidateVisualizer(),
     ])
     pipeline = DetectionPipeline(source, detector, tracker, postprocessor)
     writer = None
@@ -174,7 +173,7 @@ def main():
         (4, "CandidateScoring", [MaskExtraction(), DistanceHeatmap(), BitmaskSkeleton(),
                                   CandidateScoring()],                                        vis_stage4_candidates),
         (5, "FullPipeline",     [MaskExtraction(), DistanceHeatmap(), BitmaskSkeleton(),
-                                  CandidateScoring(), WarmupFinalPoint(), CandidateVisualizer()], vis_stage5_full),
+                                  CandidateScoring(), CandidateVisualizer()], vis_stage5_full),
     ]
 
     detector = YOLOBranchSeg(YOLO_PATH, conf=CONF)

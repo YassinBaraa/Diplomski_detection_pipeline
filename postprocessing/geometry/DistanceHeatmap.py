@@ -10,6 +10,10 @@ class DistanceHeatmap(Stage):
         #Determine the distance transform.
         dist = cv2.distanceTransform(ctx.binary_mask, cv2.DIST_L2, 5)
 
+        # Keep the raw maximum (px) so a normalised value can be turned back into
+        # a real half-thickness in pixels.
+        ctx.debug["heatmap_max_px"] = float(dist.max())
+
         # Make the distance transform normal.
         ctx.distance_heatmap = cv2.normalize(dist, None, 0, 1.0, cv2.NORM_MINMAX)
 

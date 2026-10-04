@@ -69,7 +69,7 @@ tracking:
   track_activation_threshold: 0.5   # min conf to START a track (lower-conf dets only keep one alive)
   lost_track_buffer: 30
   minimum_consecutive_frames: 1
-  coast_frames: 5                   # Kalman-coast lost tracks this many frames (0 = off)
+  coast_frames: 0                   # Kalman-coast lost tracks this many frames (0 = off, implementation kept in trackers/TrackCoaster.py)
 
 # test_record.py: run the .pt model over recorded videos and save annotated output
 # (detector confidence and tracking settings come from the sections above)

@@ -92,10 +92,9 @@ class DetectionPipeline:
                 t_post0 = time.monotonic()
                 if self.postprocessor is not None:
                     ctx = self.postprocessor.process(ctx)
-                    fp = getattr(ctx, "final_point", None)
                     bc = getattr(ctx, "best_candidate", None)
                     print(f"[DetectionPipeline] Frame {frame_n}: postprocessor — "
-                          f"final_point={fp}, best_candidate={bc}")
+                          f"best_candidate={bc}")
                 t_post1 = time.monotonic()
 
                 print(f"[DetectionPipeline] Frame {frame_n}: TIMING — "

@@ -88,23 +88,6 @@ class CandidateVisualizer(Stage):
                 except (ValueError, TypeError) as e:
                     logger.warning(f"Invalid best candidate data: {e}")
 
-            # Draw final point from warmup
-            if ctx.final_point is not None:
-                try:
-                    x = int(ctx.final_point["x"] * scale_x)
-                    y = int(ctx.final_point["y"] * scale_y)
-                    x = max(0, min(x, vis_w - 1))
-                    y = max(0, min(y, vis_h - 1))
-                    
-                    # Draw larger circle for final point
-                    cv2.circle(vis, (x, y), 12, (255, 0, 255), 3)  # Magenta for final point
-                    occurrences = ctx.final_point.get("occurrences", 0)
-                    total = ctx.final_point.get("total_observations", 0)
-                    text = f"FINAL: ({x},{y}) [{occurrences}/{total}]"
-                    cv2.putText(vis, text, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 255), 2)
-                except (KeyError, ValueError, TypeError) as e:
-                    logger.warning(f"Error drawing final point: {e}")
-
             # Draw statistics
             try:
                 y_pos = 60
@@ -113,15 +96,12 @@ class CandidateVisualizer(Stage):
                 num_confirmed = ctx.debug.get("num_confirmed_tracks", 0)
                 skipped_skeleton = ctx.debug.get("skipped_no_skeleton", 0)
                 skipped_boundary = ctx.debug.get("skipped_boundary", 0)
-                warmup_prog = ctx.debug.get("warmup_progress", "")
 
                 cv2.putText(vis, f"Candidates: {num_cands}", (10, y_pos), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
                 cv2.putText(vis, f"Tracks: {num_tracks}", (10, y_pos + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
                 cv2.putText(vis, f"Confirmed: {num_confirmed}", (10, y_pos + 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
                 cv2.putText(vis, f"Skipped (skeleton): {skipped_skeleton}", (10, y_pos + 60), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (100, 100, 200), 1)
                 cv2.putText(vis, f"Skipped (boundary): {skipped_boundary}", (10, y_pos + 80), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (100, 100, 200), 1)
-                if warmup_prog:
-                    cv2.putText(vis, f"Warmup: {warmup_prog}", (10, y_pos + 100), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (150, 150, 100), 1)
             except (ValueError, TypeError) as e:
                 logger.warning(f"Error drawing statistics: {e}")
 
