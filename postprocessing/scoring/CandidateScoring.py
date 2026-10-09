@@ -8,9 +8,15 @@ logger = logging.getLogger(__name__)
 
 # Constraints (hard filters) - disabled to allow all tracks through
 ASPECT_RATIO_MIN = 0.0  # Allow any aspect ratio
-ASPECT_RATIO_MAX = 10.0
+ASPECT_RATIO_MAX = float("inf")  # was 10, which dropped long horizontal branches (w/h > 10)
 BBOX_SIZE_MIN = 0.0     # Allow any size
 BBOX_SIZE_MAX = 1.0
+
+# Orientation filter: only branches running (roughly) horizontal or vertical in the image
+# are candidates. The direction comes from a line fit through the track's skeleton pixels.
+ORIENTATION_FILTER = True
+ORIENTATION_TOLERANCE_DEG = 20.0  # accepted: angle <= this (horizontal) or >= 90 - this (vertical)
+ORIENTATION_MIN_PIXELS = 10       # fewer skeleton pixels than this -> fit the track's mask instead
 
 # Weights for the per-track score (easy to adjust)
 WEIGHTS = {
@@ -37,6 +43,24 @@ def _endpoints(sk):
     neighbours = cv2.filter2D(sk.astype(np.uint8), -1, np.ones((3, 3), np.uint8),
                               borderType=cv2.BORDER_CONSTANT)
     return np.argwhere(sk & (neighbours == 2))
+
+
+def _branch_angle(mask_i, skeleton, xyxy, frame_w, frame_h):
+    """Angle of the branch axis from horizontal in degrees (0 = horizontal, 90 = vertical),
+    or None if the track has too few pixels to tell."""
+    if mask_i is None:
+        return None
+    x1, y1, x2, y2 = xyxy
+    x1, y1 = max(int(x1), 0), max(int(y1), 0)
+    x2, y2 = min(int(x2) + 1, frame_w), min(int(y2) + 1, frame_h)
+    m = mask_i[y1:y2, x1:x2].astype(bool)
+    pts = np.argwhere((skeleton[y1:y2, x1:x2] > 0) & m) if skeleton is not None else np.empty((0, 2))
+    if len(pts) < ORIENTATION_MIN_PIXELS:
+        pts = np.argwhere(m)
+    if len(pts) < ORIENTATION_MIN_PIXELS:
+        return None
+    vx, vy = cv2.fitLine(pts[:, ::-1].astype(np.float32), cv2.DIST_L2, 0, 0.01, 0.01).reshape(-1)[:2]
+    return float(np.degrees(np.arctan2(abs(vy), abs(vx))))
 
 
 class CandidateScoring(Stage):
@@ -125,6 +149,7 @@ class CandidateScoring(Stage):
         all_candidates = []
         skipped_skeleton = 0  # tracks that had no skeleton pixel, fell back to the bbox centre
         skipped_boundary = 0  # tracks where the endpoint margin had to be relaxed
+        skipped_orientation = 0  # tracks rejected for being neither horizontal nor vertical
 
         ctx.debug["num_tracks"] = len(ctx.tracks)
 
@@ -152,6 +177,12 @@ class CandidateScoring(Stage):
 
             if not (BBOX_SIZE_MIN <= size_ratio <= BBOX_SIZE_MAX):
                 continue  # Reject if size not in range
+
+            angle = _branch_angle(mask_i, ctx.skeleton, (x1, y1, x2, y2), frame_w, frame_h)
+            if ORIENTATION_FILTER and angle is not None and \
+                    ORIENTATION_TOLERANCE_DEG < angle < 90.0 - ORIENTATION_TOLERANCE_DEG:
+                skipped_orientation += 1
+                continue
 
             norm_confidence = float(confidence) if confidence is not None else 0.0
 
@@ -192,6 +223,7 @@ class CandidateScoring(Stage):
                 "bbox": (int(x1), int(y1), int(x2), int(y2)),
                 "distance_to_boundary": heat_here,
                 "on_skeleton": on_skeleton,
+                "angle_deg": angle,
             }
 
             all_candidates.append(candidate)
@@ -218,5 +250,6 @@ class CandidateScoring(Stage):
         ctx.debug["num_confirmed_tracks"] = len(all_candidates)
         ctx.debug["skipped_no_skeleton"] = skipped_skeleton
         ctx.debug["skipped_boundary"] = skipped_boundary
+        ctx.debug["skipped_orientation"] = skipped_orientation
 
         return ctx

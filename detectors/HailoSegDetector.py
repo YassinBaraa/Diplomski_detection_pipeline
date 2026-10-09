@@ -31,7 +31,9 @@ class HailoSegDetector(Detector):
         self._infer_model    = self._device.create_infer_model(hef_path)
         self._h, self._w, _  = self._infer_model.input().shape
 
-        self._configured = self._infer_model.configure().__enter__()
+        # Keep the context manager: release() must __exit__ it before closing the device
+        self._configured_cm  = self._infer_model.configure()
+        self._configured     = self._configured_cm.__enter__()
         self._configured.activate()
 
         self._out_bufs = {
@@ -161,14 +163,21 @@ class HailoSegDetector(Detector):
         return [detections[i] for i in indices.flatten()], proto
 
     def release(self):
+        # Tear down innermost-first (bindings -> configured model -> infer model ->
+        # device). Closing the device while the configured model was still alive
+        # segfaulted on exit; never releasing it hung the process on exit.
+        self._bindings = None
         try:
-            if self._configured is not None:
-                self._configured.deactivate()
+            if self._configured_cm is not None:
+                self._configured_cm.__exit__(None, None, None)
         except Exception as e:
-            print(f"Error deactivating Hailo config: {e}")
-        
+            print(f"Error closing Hailo configured model: {e}")
+        self._configured_cm = None
+        self._configured = None
+        self._infer_model = None
         try:
             if self._device is not None:
-                self._device.__exit__(None, None, None)
+                self._device.release()
         except Exception as e:
             print(f"Error closing Hailo device: {e}")
+        self._device = None

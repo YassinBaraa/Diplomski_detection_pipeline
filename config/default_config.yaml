@@ -12,7 +12,7 @@ source:
 detector:
   type: "hailo_seg"  # "yolo_seg" or "hailo_seg"
   model_path: "model/yolov8_segmentation.hef"
-  confidence_threshold: 0.25   # low on purpose: the tracker (tracking.*) decides what counts
+  confidence_threshold: 0.5
 
 # Camera Configuration (if source type is "camera", i.e. Pi camera via picamera2)
 camera:
@@ -71,10 +71,12 @@ tracking:
   minimum_consecutive_frames: 1
   coast_frames: 0                   # Kalman-coast lost tracks this many frames (0 = off, implementation kept in trackers/TrackCoaster.py)
 
-# test_record.py: run the .pt model over recorded videos and save annotated output
-# (detector confidence and tracking settings come from the sections above)
+# test_record.py: run the detector over recorded videos and save annotated output
+# (detector type/confidence and tracking settings come from the sections above:
+#  detector.type "hailo_seg" uses the AI HAT .hef, anything else the .pt below)
 test_record:
-  video_dir: "/home/baraa/Desktop/Paper_1/recordings"  # every *.mp4 in here is processed
-  model_path: "model/best_small.pt"
+  video_dir: "/home/crow-black/Autonomous_perching/UDP_client/recordings"  # absolute, or relative to detection_pipeline/
+  videos: ["20261002_145928_raw.mp4", "20261002_150100_raw.mp4", "20261002_151506_raw.mp4"]  # empty = every *.mp4 in video_dir
+  model_path: "model/best_small.pt"   # only used when detector.type is not "hailo_seg"
   stages: [5]                 # 1=mask 2=heatmap 3=skeleton 4=candidates 5=full pipeline overlay
   output_dir: "detection_test"
