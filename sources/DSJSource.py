@@ -1,4 +1,5 @@
 import glob
+import time
 import cv2
 from sources.FrameSource import FrameSource
 
@@ -67,9 +68,12 @@ class DSJSource(FrameSource):
 
     def read(self):
         ret, frame = self.cap.read()
+        # Grab time on this computer's monotonic clock, taken before any processing
+        # and carried with the frame, so the UDP packet can report its "age".
+        t_frame = time.monotonic()
         if not ret or frame is None:
             return False, None, None
-        return True, frame, None
+        return True, frame, {"t_frame": t_frame}
 
     def release(self):
         self.cap.release()
