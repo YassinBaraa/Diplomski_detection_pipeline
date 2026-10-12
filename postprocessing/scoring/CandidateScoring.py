@@ -33,6 +33,18 @@ POINT_KEEP_RADIUS = 60     # px, previous point follows the branch to the neares
 POINT_KEEP_MARGIN = 0.3    # ... as long as it scores at most this much below the new best pixel
                            # (tuned on the recordings: 6 px / 0.03 made the point jump 30+ px between frames)
 
+# Keep the point away from crossings: other segmented structures (a pipe, a wire), junctions of
+# the skeleton, and bulges of the mask (an unsegmented crossing makes it locally thicker). The
+# merged mask is thickest there, so the thickness score picked exactly those spots (2026-10-11/12
+# flights: the stick where it crosses the ceiling wire and pipe), where the gripper would hit them.
+CROSSING_CLEARANCE = 10.0  # x the branch's median half-width (= 5 widths, room for the gripper), at least CROSSING_MIN_PX
+CROSSING_MIN_PX = 15
+BULGE_RATIO = 1.6          # half-width this much above the branch's median counts as a bulge
+# A crossing the detector did not segment (the ceiling pipe on 2026-10-12): the background on BOTH
+# sides of the branch is darker there than along the rest of it
+SIDE_OFFSET = 6.0          # sample the background this many half-widths (+4 px) off the branch axis
+SIDE_DARKER = 25           # gray levels below the branch's typical background, on both sides
+
 
 def sigmoid(x):
     return 1.0 / (1.0 + np.exp(-np.clip(x, -10, 10)))
@@ -76,8 +88,33 @@ class CandidateScoring(Stage):
         self._prev_id = None
         self._prev_xy = {}  # track_id -> (x, y) chosen last frame
 
-    def _pick_point(self, mask_i, xyxy, ctx, track_id, frame_w, frame_h):
-        """Returns (x, y, heat_norm, center_norm, on_skeleton, relaxed) or None if no skeleton pixel."""
+    @staticmethod
+    def _crossed(ctx, pts, x1, y1, med_half):
+        """(rows, cols) of the skeleton pixels `pts` (ROI coords) where something crosses the branch:
+        the background on both sides, SIDE_OFFSET half-widths off the axis, is clearly darker than
+        the branch's typical background."""
+        if len(pts) < 10:
+            return pts[:0, 0], pts[:0, 1]
+        gray = ctx.debug.get("_gray")
+        if gray is None:
+            gray = ctx.debug["_gray"] = cv2.cvtColor(ctx.frame, cv2.COLOR_BGR2GRAY)
+        vx, vy = cv2.fitLine(pts[:, ::-1].astype(np.float32), cv2.DIST_L2, 0, 0.01, 0.01).reshape(-1)[:2]
+        n = np.array([-vy, vx])
+        s = SIDE_OFFSET * med_half + 4.0
+        h, w = gray.shape
+        xy = pts[:, ::-1].astype(np.float32) + (x1, y1)
+        sides = []
+        for sign in (1.0, -1.0):
+            q = np.round(xy + sign * s * n).astype(int)
+            q[:, 0], q[:, 1] = np.clip(q[:, 0], 0, w - 1), np.clip(q[:, 1], 0, h - 1)
+            sides.append(gray[q[:, 1], q[:, 0]].astype(np.float32))
+        ref = float(np.median(np.concatenate(sides)))
+        hit = (sides[0] < ref - SIDE_DARKER) & (sides[1] < ref - SIDE_DARKER)
+        return pts[hit, 0], pts[hit, 1]
+
+    def _pick_point(self, mask_i, xyxy, ctx, track_id, frame_w, frame_h, other_mask=None):
+        """Returns (x, y, heat_norm, center_norm, on_skeleton, relaxed) or None if no skeleton pixel.
+        other_mask: pixels of the other segmented structures (bool, full frame), to stay away from."""
         if mask_i is None or ctx.skeleton is None or ctx.distance_heatmap is None:
             return None
 
@@ -106,6 +143,24 @@ class CandidateScoring(Stage):
             if not keep.any():
                 keep = np.ones(len(pts), dtype=bool)
                 relaxed = True
+        # Stay away from crossings, junctions and bulges, unless that would leave nothing
+        half_px = heat * ctx.debug.get("heatmap_max_px", 0.0)
+        med_half = float(np.median(half_px[keep])) if half_px.max() > 0 else 0.0
+        if med_half > 0:
+            blocked = np.zeros(sk.shape, dtype=bool)
+            if other_mask is not None:
+                blocked |= other_mask[y1:y2, x1:x2]
+            sk_all = ctx.skeleton[y1:y2, x1:x2] > 0
+            n_all = cv2.filter2D(sk_all.astype(np.uint8), -1, np.ones((3, 3), np.uint8), borderType=cv2.BORDER_CONSTANT)
+            blocked |= sk_all & (n_all >= 4)                       # pixel + 3 or more neighbours: junction
+            bulge = pts[half_px > BULGE_RATIO * med_half]
+            blocked[bulge[:, 0], bulge[:, 1]] = True
+            blocked[self._crossed(ctx, pts, x1, y1, med_half)] = True
+            if blocked.any():
+                clear = cv2.distanceTransform((~blocked).astype(np.uint8), cv2.DIST_L2, 3)[pts[:, 0], pts[:, 1]]
+                far = keep & (clear >= max(CROSSING_CLEARANCE * med_half, CROSSING_MIN_PX))
+                if far.any():
+                    keep = far
         pts, heat_norm = pts[keep], heat_norm[keep]
 
         xs = pts[:, 1] + x1
@@ -153,6 +208,10 @@ class CandidateScoring(Stage):
 
         ctx.debug["num_tracks"] = len(ctx.tracks)
 
+        # How many segmented structures cover each pixel, so each track can see the others
+        masks = [m for _, m, *_ in ctx.tracks if m is not None]
+        cover = np.sum([m.astype(np.uint8) for m in masks], axis=0) if masks else None
+
         for xyxy, mask_i, confidence, class_id, tracker_id, data in ctx.tracks:
             if tracker_id is None:
                 continue
@@ -186,7 +245,8 @@ class CandidateScoring(Stage):
 
             norm_confidence = float(confidence) if confidence is not None else 0.0
 
-            picked = self._pick_point(mask_i, (x1, y1, x2, y2), ctx, int(tracker_id), frame_w, frame_h)
+            other = (cover - mask_i.astype(np.uint8)) > 0 if cover is not None and mask_i is not None else None
+            picked = self._pick_point(mask_i, (x1, y1, x2, y2), ctx, int(tracker_id), frame_w, frame_h, other)
             if picked is not None:
                 px, py, norm_thickness, norm_center, on_skeleton, relaxed = picked
                 skipped_boundary += int(relaxed)
