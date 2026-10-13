@@ -28,6 +28,11 @@ WEIGHTS = {
 # Which skeleton pixel of a track becomes its perch point
 PIXEL_WEIGHTS = {"thickness": 0.6, "center": 0.4}
 END_MARGIN_PX = 30         # keep the point this far from skeleton endpoints (gripper needs branch on both sides)
+# ... and from the branch's own two ends (not where it leaves the image) at least this many widths:
+# with only 30 px the 2026-10-13 10:19 flight locked on the very tip of a short stub, where the
+# width can't be measured (size on 12 % of packets). No room for that -> no point on this branch.
+END_MARGIN_WIDTHS = 5.0
+FRAME_EDGE_END_PX = 3      # a skeleton end this close to the frame edge is where the branch leaves the image
 TRACK_SWITCH_MARGIN = 0.05 # a rival track must beat the previous best by this much to take over
 POINT_KEEP_RADIUS = 60     # px, previous point follows the branch to the nearest valid skeleton pixel within this
 POINT_KEEP_MARGIN = 0.3    # ... as long as it scores at most this much below the new best pixel
@@ -44,6 +49,9 @@ BULGE_RATIO = 1.6          # half-width this much above the branch's median coun
 # sides of the branch is darker there than along the rest of it
 SIDE_OFFSET = 6.0          # sample the background this many half-widths (+4 px) off the branch axis
 SIDE_DARKER = 25           # gray levels below the branch's typical background, on both sides
+
+
+NO_ROOM = "no_room"   # _pick_point: the branch has no point far enough from its ends
 
 
 def sigmoid(x):
@@ -113,7 +121,8 @@ class CandidateScoring(Stage):
         return pts[hit, 0], pts[hit, 1]
 
     def _pick_point(self, mask_i, xyxy, ctx, track_id, frame_w, frame_h, other_mask=None):
-        """Returns (x, y, heat_norm, center_norm, on_skeleton, relaxed) or None if no skeleton pixel.
+        """Returns (x, y, heat_norm, center_norm, on_skeleton, relaxed), None if no skeleton pixel, or
+        NO_ROOM if every skeleton pixel is too close to the branch's ends.
         other_mask: pixels of the other segmented structures (bool, full frame), to stay away from."""
         if mask_i is None or ctx.skeleton is None or ctx.distance_heatmap is None:
             return None
@@ -133,18 +142,33 @@ class CandidateScoring(Stage):
         heat = ctx.distance_heatmap[y1:y2, x1:x2][pts[:, 0], pts[:, 1]]
         heat_norm = heat / heat.max() if heat.max() > 0 else np.ones_like(heat)
 
-        # Stay away from the ends of the skeleton, relax if that would leave nothing
+        # Stay away from the ends of the skeleton: END_MARGIN_PX from every end, and from the
+        # branch's own two ends (the farthest-apart endpoints not at the frame edge) END_MARGIN_WIDTHS
+        # widths beyond the skeleton end (which stops about half a width short of the tip).
+        # Nothing left -> NO_ROOM: this branch gets no point (never the tip as a fallback).
         relaxed = False
+        half_px = heat * ctx.debug.get("heatmap_max_px", 0.0)
+        med_half_all = float(np.median(half_px)) if half_px.max() > 0 else 0.0
         ends = _endpoints(sk)
         keep = np.ones(len(pts), dtype=bool)
         if len(ends) > 0:
-            d_end = np.sqrt(((pts[:, None, :] - ends[None, :, :]) ** 2).sum(axis=2)).min(axis=1)
-            keep = d_end >= END_MARGIN_PX
+            dist = np.sqrt(((pts[:, None, :] - ends[None, :, :]) ** 2).sum(axis=2))   # [P, E]
+            keep = dist.min(axis=1) >= END_MARGIN_PX
+            if len(ends) >= 2:
+                de = np.sqrt(((ends[:, None, :] - ends[None, :, :]) ** 2).sum(axis=2))
+                tips = list(np.unravel_index(int(np.argmax(de)), de.shape))
+            else:
+                tips = [0]
+            fy, fx = ends[:, 0] + y1, ends[:, 1] + x1
+            at_frame_edge = (fx < FRAME_EDGE_END_PX) | (fy < FRAME_EDGE_END_PX) | \
+                            (fx >= frame_w - FRAME_EDGE_END_PX) | (fy >= frame_h - FRAME_EDGE_END_PX)
+            tip_margin = max(END_MARGIN_PX, END_MARGIN_WIDTHS * 2.0 * med_half_all) + med_half_all
+            for e in tips:
+                if not at_frame_edge[e]:
+                    keep &= dist[:, e] >= tip_margin
             if not keep.any():
-                keep = np.ones(len(pts), dtype=bool)
-                relaxed = True
+                return NO_ROOM
         # Stay away from crossings, junctions and bulges, unless that would leave nothing
-        half_px = heat * ctx.debug.get("heatmap_max_px", 0.0)
         med_half = float(np.median(half_px[keep])) if half_px.max() > 0 else 0.0
         if med_half > 0:
             blocked = np.zeros(sk.shape, dtype=bool)
@@ -203,7 +227,7 @@ class CandidateScoring(Stage):
 
         all_candidates = []
         skipped_skeleton = 0  # tracks that had no skeleton pixel, fell back to the bbox centre
-        skipped_boundary = 0  # tracks where the endpoint margin had to be relaxed
+        skipped_boundary = 0  # tracks left out: no point far enough from the branch's ends
         skipped_orientation = 0  # tracks rejected for being neither horizontal nor vertical
 
         ctx.debug["num_tracks"] = len(ctx.tracks)
@@ -247,6 +271,9 @@ class CandidateScoring(Stage):
 
             other = (cover - mask_i.astype(np.uint8)) > 0 if cover is not None and mask_i is not None else None
             picked = self._pick_point(mask_i, (x1, y1, x2, y2), ctx, int(tracker_id), frame_w, frame_h, other)
+            if picked is NO_ROOM:
+                skipped_boundary += 1   # no point clear of the branch's ends: not a candidate
+                continue
             if picked is not None:
                 px, py, norm_thickness, norm_center, on_skeleton, relaxed = picked
                 skipped_boundary += int(relaxed)
