@@ -138,9 +138,11 @@ class CandidateScoring(Stage):
         hit = (sides[0] < ref - SIDE_DARKER) & (sides[1] < ref - SIDE_DARKER)
         return pts[hit, 0], pts[hit, 1]
 
-    def _pick_point(self, mask_i, xyxy, ctx, track_id, frame_w, frame_h, other_mask=None):
+    def _pick_point(self, mask_i, xyxy, ctx, track_id, frame_w, frame_h, other_mask=None, tip_rule=True):
         """Returns (x, y, heat_norm, center_norm, on_skeleton, relaxed), None if no skeleton pixel, or
-        NO_ROOM if every skeleton pixel is too close to the branch's ends.
+        NO_ROOM if every skeleton pixel is too close to the branch's ends. tip_rule=False drops the
+        END_MARGIN_WIDTHS rule (END_MARGIN_PX from every end still applies): the point of a branch the
+        operator chose although it has no room (live view).
         other_mask: pixels of the other segmented structures (bool, full frame), to stay away from."""
         if mask_i is None or ctx.skeleton is None or ctx.distance_heatmap is None:
             return None
@@ -181,7 +183,7 @@ class CandidateScoring(Stage):
             at_frame_edge = (fx < FRAME_EDGE_END_PX) | (fy < FRAME_EDGE_END_PX) | \
                             (fx >= frame_w - FRAME_EDGE_END_PX) | (fy >= frame_h - FRAME_EDGE_END_PX)
             tip_margin = max(END_MARGIN_PX, END_MARGIN_WIDTHS * 2.0 * med_half_all) + med_half_all
-            for e in tips:
+            for e in (tips if tip_rule else []):
                 if not at_frame_edge[e]:
                     keep &= dist[:, e] >= tip_margin
             if not keep.any():
@@ -233,6 +235,7 @@ class CandidateScoring(Stage):
             ctx.debug["num_candidates"] = 0
             ctx.debug["skipped_no_skeleton"] = 0
             ctx.debug["skipped_boundary"] = 0
+            ctx.debug["rejected_candidates"] = []
             self._prev_id = None
             self._prev_xy = {}
             logger.debug(f"No tracks available. Skeleton: {ctx.skeleton is not None}, Skeleton empty: {ctx.skeleton is not None and np.sum(ctx.skeleton) == 0}")
@@ -244,6 +247,10 @@ class CandidateScoring(Stage):
         heat_max_px = ctx.debug.get("heatmap_max_px", 0.0)
 
         all_candidates = []
+        # Tracks that are not candidates, with the reason (for the live view): {"track_id", "reason",
+        # "bbox", "angle_deg"} -- "end" ones also carry a point without the tip rule, which only an
+        # explicit choice of that branch uses.
+        rejected = []
         skipped_skeleton = 0  # tracks that had no skeleton pixel, fell back to the bbox centre
         skipped_boundary = 0  # tracks left out: no point far enough from the branch's ends
         skipped_orientation = 0  # tracks rejected for being neither horizontal nor vertical
@@ -282,15 +289,24 @@ class CandidateScoring(Stage):
             angle = _branch_angle(mask_i, ctx.skeleton, (x1, y1, x2, y2), frame_w, frame_h)
             if ORIENTATION_FILTER and not _orientation_ok(angle):
                 skipped_orientation += 1
+                rejected.append({"track_id": int(tracker_id), "reason": "direction", "angle_deg": angle,
+                                 "bbox": (int(x1), int(y1), int(x2), int(y2)), "confidence": float(confidence or 0.0)})
                 continue
 
             norm_confidence = float(confidence) if confidence is not None else 0.0
 
             other = (cover - mask_i.astype(np.uint8)) > 0 if cover is not None and mask_i is not None else None
             picked = self._pick_point(mask_i, (x1, y1, x2, y2), ctx, int(tracker_id), frame_w, frame_h, other)
-            if picked is NO_ROOM:
+            no_room = picked is NO_ROOM
+            if no_room:
                 skipped_boundary += 1   # no point clear of the branch's ends: not a candidate
-                continue
+                picked = self._pick_point(mask_i, (x1, y1, x2, y2), ctx, int(tracker_id), frame_w, frame_h, other,
+                                          tip_rule=False)
+                if picked is None or picked is NO_ROOM:
+                    rejected.append({"track_id": int(tracker_id), "reason": "end", "angle_deg": angle,
+                                     "bbox": (int(x1), int(y1), int(x2), int(y2)),
+                                     "confidence": float(confidence or 0.0)})
+                    continue
             if picked is not None:
                 px, py, norm_thickness, norm_center, on_skeleton, relaxed = picked
                 skipped_boundary += int(relaxed)
@@ -330,6 +346,10 @@ class CandidateScoring(Stage):
                 "angle_deg": angle,
             }
 
+            if no_room:
+                candidate["reason"] = "end"
+                rejected.append(candidate)
+                continue
             all_candidates.append(candidate)
 
         # Best candidate overall (ties broken by lowest track id), sticky to last frame's track
@@ -348,6 +368,7 @@ class CandidateScoring(Stage):
 
         ctx.best_candidate = best
         ctx.candidates = all_candidates
+        ctx.debug["rejected_candidates"] = rejected
 
         # Set debug counters
         ctx.debug["num_candidates"] = len(all_candidates)
