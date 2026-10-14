@@ -6,6 +6,7 @@ from detectors.Detector import Detector
 HEF_PATH    = "model/yolov8_segmentation.hef"
 CONF_THRESH = 0.5
 INPUT_SIZE  = 640
+LETTERBOX_GREY = 114   # the grey YOLOv8 pads with in training
 
 
 def _sigmoid(x):
@@ -50,10 +51,17 @@ class HailoSegDetector(Detector):
 
     def predict(self, frame):
         orig_h, orig_w = frame.shape[:2]
-        rgb     = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        resized = cv2.resize(rgb, (self._w, self._h))
+        # Letterbox, as YOLOv8 is trained: scale evenly to fit (1280x720 -> 640x360) and pad with grey,
+        # instead of squashing to 640x640 (squashed: lower confidence, fewer detections)
+        scale   = min(self._w / orig_w, self._h / orig_h)
+        new_w, new_h = int(round(orig_w * scale)), int(round(orig_h * scale))
+        pad_x, pad_y = (self._w - new_w) // 2, (self._h - new_h) // 2
+        small   = cv2.cvtColor(cv2.resize(frame, (new_w, new_h)), cv2.COLOR_BGR2RGB)
+        inp     = cv2.copyMakeBorder(small, pad_y, self._h - new_h - pad_y, pad_x, self._w - new_w - pad_x,
+                                     cv2.BORDER_CONSTANT, value=(LETTERBOX_GREY,) * 3)
+        self._letterbox = (scale, pad_x, pad_y, new_w, new_h)
 
-        self._bindings.input().set_buffer(resized)
+        self._bindings.input().set_buffer(inp)
         self._configured.run([self._bindings], timeout=1000)
 
         float_out   = {
@@ -73,6 +81,12 @@ class HailoSegDetector(Detector):
         confidences = np.array([d[4] for d in dets], dtype=np.float32)
         class_ids   = np.zeros(len(dets), dtype=np.int32)
 
+        # the photo's part of the prototype masks (160x160 over the 640x640 input, 4 input px per cell)
+        _, pad_x, pad_y, new_w, new_h = self._letterbox
+        cell  = self._w / proto.shape[2]
+        proto = np.ascontiguousarray(proto[:, int(round(pad_y / cell)):int(round((pad_y + new_h) / cell)),
+                                           int(round(pad_x / cell)):int(round((pad_x + new_w) / cell))])
+
         masks = []
         for det in dets:
             x1, y1, x2, y2 = int(det[0]), int(det[1]), int(det[2]), int(det[3])
@@ -82,7 +96,7 @@ class HailoSegDetector(Detector):
                 masks.append(np.zeros((orig_h, orig_w), dtype=bool))
                 continue
 
-            m      = _sigmoid(np.einsum('c,chw->hw', coeffs, proto))  # [160,160]
+            m      = _sigmoid(np.einsum('c,chw->hw', coeffs, proto))  # [90,160] for 1280x720
             m      = cv2.resize(m, (orig_w, orig_h))                   # [orig_h, orig_w]
             binary = (m > 0.5)
 
@@ -132,13 +146,15 @@ class HailoSegDetector(Detector):
             H, W    = scores.shape
             ltrb    = _dfl_decode(box_raw)
 
-            gy, gx = np.meshgrid(np.arange(H), np.arange(W), indexing='ij')
-            scale   = orig_w / INPUT_SIZE   # assumes square-ish input
+            # YOLOv8 measures the box edges from the cell's centre (cell + 0.5), not its corner
+            gy, gx = np.meshgrid(np.arange(H) + 0.5, np.arange(W) + 0.5, indexing='ij')
 
-            x1 = (gx - ltrb[..., 0]) * stride * (orig_w / INPUT_SIZE)
-            y1 = (gy - ltrb[..., 1]) * stride * (orig_h / INPUT_SIZE)
-            x2 = (gx + ltrb[..., 2]) * stride * (orig_w / INPUT_SIZE)
-            y2 = (gy + ltrb[..., 3]) * stride * (orig_h / INPUT_SIZE)
+            # network input pixels -> photo pixels (undo the letterbox)
+            scale, pad_x, pad_y = self._letterbox[:3]
+            x1 = ((gx - ltrb[..., 0]) * stride - pad_x) / scale
+            y1 = ((gy - ltrb[..., 1]) * stride - pad_y) / scale
+            x2 = ((gx + ltrb[..., 2]) * stride - pad_x) / scale
+            y2 = ((gy + ltrb[..., 3]) * stride - pad_y) / scale
 
             for iy, ix in np.argwhere(scores > self.conf):
                 detections.append((
@@ -153,8 +169,9 @@ class HailoSegDetector(Detector):
         if not detections:
             return [], proto
 
-        boxes_np  = np.array([[d[0], d[1], d[2], d[3]] for d in detections], dtype=np.float32)
-        scores_np = np.array([d[4] for d in detections],                      dtype=np.float32)
+        # NMSBoxes takes (x, y, width, height)
+        boxes_np  = np.array([[d[0], d[1], d[2] - d[0], d[3] - d[1]] for d in detections], dtype=np.float32)
+        scores_np = np.array([d[4] for d in detections],                                      dtype=np.float32)
         indices   = cv2.dnn.NMSBoxes(boxes_np.tolist(), scores_np.tolist(), self.conf, 0.45)
 
         if len(indices) == 0:

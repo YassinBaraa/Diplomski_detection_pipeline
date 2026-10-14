@@ -17,6 +17,13 @@ BBOX_SIZE_MAX = 1.0
 ORIENTATION_FILTER = True
 ORIENTATION_TOLERANCE_DEG = 20.0  # accepted: angle <= this (horizontal) or >= 90 - this (vertical)
 ORIENTATION_MIN_PIXELS = 10       # fewer skeleton pixels than this -> fit the track's mask instead
+# Vertical branches only (the pilot yaws so the target branch hangs vertically in the image): a
+# branch is a candidate only if it is within VERTICAL_TOLERANCE_DEG of vertical; one too small to
+# tell its direction is left out too. Horizontal structures -- the ceiling beam, which the network
+# calls a branch (0.59) and which nearly won on 2026-10-13 (0.834 vs the stick's 0.840) -- never
+# become the target; their masks still count as obstacles for the crossing rule.
+VERTICAL_ONLY = True
+VERTICAL_TOLERANCE_DEG = 30.0
 
 # Weights for the per-track score (easy to adjust)
 WEIGHTS = {
@@ -58,11 +65,22 @@ def sigmoid(x):
     return 1.0 / (1.0 + np.exp(-np.clip(x, -10, 10)))
 
 
+# 3x3 sum = pixel + its 8-neighbours. The kernel must be float: with a uint8 kernel cv2.filter2D (4.10)
+# returns wrong sums (1 along a line instead of 3), so no end points and no junctions were found.
+_NEIGHBOURS = np.ones((3, 3), np.float32)
+
+
 def _endpoints(sk):
     """Skeleton pixels with exactly one 8-neighbour. Returns [E, 2] (row, col)."""
-    neighbours = cv2.filter2D(sk.astype(np.uint8), -1, np.ones((3, 3), np.uint8),
-                              borderType=cv2.BORDER_CONSTANT)
+    neighbours = cv2.filter2D(sk.astype(np.uint8), -1, _NEIGHBOURS, borderType=cv2.BORDER_CONSTANT)
     return np.argwhere(sk & (neighbours == 2))
+
+
+def _orientation_ok(angle):
+    """Whether a branch at `angle` (deg from horizontal, None = unknown) may be a candidate."""
+    if VERTICAL_ONLY:
+        return angle is not None and angle >= 90.0 - VERTICAL_TOLERANCE_DEG
+    return angle is None or not ORIENTATION_TOLERANCE_DEG < angle < 90.0 - ORIENTATION_TOLERANCE_DEG
 
 
 def _branch_angle(mask_i, skeleton, xyxy, frame_w, frame_h):
@@ -175,7 +193,7 @@ class CandidateScoring(Stage):
             if other_mask is not None:
                 blocked |= other_mask[y1:y2, x1:x2]
             sk_all = ctx.skeleton[y1:y2, x1:x2] > 0
-            n_all = cv2.filter2D(sk_all.astype(np.uint8), -1, np.ones((3, 3), np.uint8), borderType=cv2.BORDER_CONSTANT)
+            n_all = cv2.filter2D(sk_all.astype(np.uint8), -1, _NEIGHBOURS, borderType=cv2.BORDER_CONSTANT)
             blocked |= sk_all & (n_all >= 4)                       # pixel + 3 or more neighbours: junction
             bulge = pts[half_px > BULGE_RATIO * med_half]
             blocked[bulge[:, 0], bulge[:, 1]] = True
@@ -262,8 +280,7 @@ class CandidateScoring(Stage):
                 continue  # Reject if size not in range
 
             angle = _branch_angle(mask_i, ctx.skeleton, (x1, y1, x2, y2), frame_w, frame_h)
-            if ORIENTATION_FILTER and angle is not None and \
-                    ORIENTATION_TOLERANCE_DEG < angle < 90.0 - ORIENTATION_TOLERANCE_DEG:
+            if ORIENTATION_FILTER and not _orientation_ok(angle):
                 skipped_orientation += 1
                 continue
 
