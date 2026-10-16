@@ -21,9 +21,13 @@ ORIENTATION_MIN_PIXELS = 10       # fewer skeleton pixels than this -> fit the t
 # branch is a candidate only if it is within VERTICAL_TOLERANCE_DEG of vertical; one too small to
 # tell its direction is left out too. Horizontal structures -- the ceiling beam, which the network
 # calls a branch (0.59) and which nearly won on 2026-10-13 (0.834 vs the stick's 0.840) -- never
-# become the target; their masks still count as obstacles for the crossing rule.
+# become the target; their masks still count as obstacles for the crossing rule. 45 deg (was 30):
+# outdoors, seen from below, branches run diagonally (2026-10-16 10:24: every accepted branch was
+# 63-90 deg; 34 operator clicks on 55-58 deg branches were refused); the beam (0-5 deg) stays out.
+# A branch rejected for its direction still gets a point (reason "direction"), which only an
+# explicit operator choice of that branch uses.
 VERTICAL_ONLY = True
-VERTICAL_TOLERANCE_DEG = 30.0
+VERTICAL_TOLERANCE_DEG = 45.0
 
 # Weights for the per-track score (easy to adjust)
 WEIGHTS = {
@@ -248,8 +252,9 @@ class CandidateScoring(Stage):
 
         all_candidates = []
         # Tracks that are not candidates, with the reason (for the live view): {"track_id", "reason",
-        # "bbox", "angle_deg"} -- "end" ones also carry a point without the tip rule, which only an
-        # explicit choice of that branch uses.
+        # "bbox", "angle_deg"} -- "end" ones also carry a point without the tip rule, "direction" ones a
+        # point as well (with the tip rule if it can be met), which only an explicit choice of that
+        # branch uses.
         rejected = []
         skipped_skeleton = 0  # tracks that had no skeleton pixel, fell back to the bbox centre
         skipped_boundary = 0  # tracks left out: no point far enough from the branch's ends
@@ -287,11 +292,8 @@ class CandidateScoring(Stage):
                 continue  # Reject if size not in range
 
             angle = _branch_angle(mask_i, ctx.skeleton, (x1, y1, x2, y2), frame_w, frame_h)
-            if ORIENTATION_FILTER and not _orientation_ok(angle):
-                skipped_orientation += 1
-                rejected.append({"track_id": int(tracker_id), "reason": "direction", "angle_deg": angle,
-                                 "bbox": (int(x1), int(y1), int(x2), int(y2)), "confidence": float(confidence or 0.0)})
-                continue
+            off_direction = ORIENTATION_FILTER and not _orientation_ok(angle)
+            skipped_orientation += int(off_direction)
 
             norm_confidence = float(confidence) if confidence is not None else 0.0
 
@@ -299,11 +301,12 @@ class CandidateScoring(Stage):
             picked = self._pick_point(mask_i, (x1, y1, x2, y2), ctx, int(tracker_id), frame_w, frame_h, other)
             no_room = picked is NO_ROOM
             if no_room:
-                skipped_boundary += 1   # no point clear of the branch's ends: not a candidate
+                skipped_boundary += int(not off_direction)   # no point clear of the branch's ends: not a candidate
                 picked = self._pick_point(mask_i, (x1, y1, x2, y2), ctx, int(tracker_id), frame_w, frame_h, other,
                                           tip_rule=False)
                 if picked is None or picked is NO_ROOM:
-                    rejected.append({"track_id": int(tracker_id), "reason": "end", "angle_deg": angle,
+                    rejected.append({"track_id": int(tracker_id), "reason": "direction" if off_direction else "end",
+                                     "angle_deg": angle,
                                      "bbox": (int(x1), int(y1), int(x2), int(y2)),
                                      "confidence": float(confidence or 0.0)})
                     continue
@@ -346,8 +349,8 @@ class CandidateScoring(Stage):
                 "angle_deg": angle,
             }
 
-            if no_room:
-                candidate["reason"] = "end"
+            if off_direction or no_room:
+                candidate["reason"] = "direction" if off_direction else "end"
                 rejected.append(candidate)
                 continue
             all_candidates.append(candidate)

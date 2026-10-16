@@ -53,6 +53,8 @@ class DSJSource(FrameSource):
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         self.cap.set(cv2.CAP_PROP_FPS, fps)
+        self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)
+        self.cap.set(cv2.CAP_PROP_EXPOSURE, 50)
         # Keep V4L2's internal queue at 1 frame: the pipeline (detection +
         # tracking + recording) can't sustain the camera's native rate, and
         # without this the queue backs up silently -- read() keeps returning
